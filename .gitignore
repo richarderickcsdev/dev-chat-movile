@@ -1,0 +1,7 @@
+node_modules/
+.env.local
+uploads/
+dist/
+.turbo/
+opencode.json
+*.log
