@@ -16,6 +16,7 @@ import usersRouter from './routes/users';
 import contactsRouter from './routes/contacts';
 import conversationsRouter from './routes/conversations';
 import groupsRouter from './routes/groups';
+import { swaggerSpec, swaggerUi } from './config/swagger';
 import { errorHandler } from './middlewares/errorHandler';
 import { logger } from './lib/logger';
 
@@ -46,6 +47,7 @@ async function bootstrap() {
   app.use('/contacts', contactsRouter);
   app.use('/conversations', conversationsRouter);
   app.use('/groups', groupsRouter);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });

@@ -1,0 +1,149 @@
+### ==========================================
+### dev-chat-api — REST Client Test File
+### Usa la extension VS Code: humao.rest-client
+### ==========================================
+
+@baseUrl = http://localhost:3001
+@token = 
+
+
+### ==========================================
+### HEALTH
+### ==========================================
+
+### GET /health
+GET {{baseUrl}}/health
+
+
+### ==========================================
+### AUTH
+### ==========================================
+
+### POST /auth/send-otp
+POST {{baseUrl}}/auth/send-otp
+Content-Type: application/json
+
+{ "phone": "+51999000001" }
+
+### POST /auth/verify-otp
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{ "phone": "+51999000001", "code": "123456" }
+
+### POST /auth/refresh
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "..." }
+
+
+### ==========================================
+### USERS (requiere token)
+### ==========================================
+
+### GET /users/me
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### PATCH /users/me
+PATCH {{baseUrl}}/users/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "name": "Alice", "bio": "Hola!" }
+
+### POST /users/me/avatar
+POST {{baseUrl}}/users/me/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="avatar"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< ./avatar.jpg
+--boundary--
+
+### GET /users/:id
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### CONTACTS (requiere token)
+### ==========================================
+
+### POST /contacts/sync
+POST {{baseUrl}}/contacts/sync
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "phones": ["+51999000001", "+51999000002", "+51999000003"] }
+
+### GET /contacts
+GET {{baseUrl}}/contacts
+Authorization: Bearer {{token}}
+
+### DELETE /contacts/:id
+DELETE {{baseUrl}}/contacts/123
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### CONVERSATIONS (requiere token)
+### ==========================================
+
+### POST /conversations
+POST {{baseUrl}}/conversations
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "participantId": "user-id-2" }
+
+### GET /conversations
+GET {{baseUrl}}/conversations
+Authorization: Bearer {{token}}
+
+### GET /conversations/:id/messages
+GET {{baseUrl}}/conversations/conv123/messages?limit=50
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### GROUPS (requiere token)
+### ==========================================
+
+### POST /groups
+POST {{baseUrl}}/groups
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "name": "Amigos", "memberIds": ["user-id-2", "user-id-3"] }
+
+### GET /groups
+GET {{baseUrl}}/groups
+Authorization: Bearer {{token}}
+
+### GET /groups/:id
+GET {{baseUrl}}/groups/group123
+Authorization: Bearer {{token}}
+
+### POST /groups/:id/members
+POST {{baseUrl}}/groups/group123/members
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "memberIds": ["user-id-4"] }
+
+### DELETE /groups/:id/members/:userId
+DELETE {{baseUrl}}/groups/group123/members/user-id-4
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### SWAGGER
+### ==========================================
+
+### GET /api-docs (Swagger UI)
+GET {{baseUrl}}/api-docs
