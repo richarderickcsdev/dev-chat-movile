@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
 import { z } from 'zod';
 import { createMessage, getMessages, markAsDelivered, markAsRead } from '../services/message.service';
+import { updateLastMessage } from '../services/conversation.service';
 import { getIO } from './index';
 import { logger } from '../lib/logger';
 import { SocketAuth } from './auth';
@@ -29,6 +30,12 @@ export function registerMessageHandlers(socket: Socket): void {
     try {
       const input = sendMessageSchema.parse(data);
       const message = await createMessage(auth.userId, input);
+
+      updateLastMessage(input.conversationId, {
+        content: input.content,
+        senderId: auth.userId,
+        createdAt: message.createdAt,
+      }).catch(() => {});
 
       socket.emit('message:ack', {
         tempId: input.tempId,
