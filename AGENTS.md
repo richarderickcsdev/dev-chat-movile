@@ -10,6 +10,7 @@ Backend de una aplicación de chat móvil en tiempo real. Arquitectura monorepo 
 - **Bases de datos:** PostgreSQL (pg 8.11), MongoDB (Mongoose 8.4), Redis (ioredis 5.3)
 - **Message Broker:** Kafka (KafkaJS 2.2)
 - **Auth:** JWT
+- **API Docs:** Swagger (OpenAPI) + REST Client (.http)
 - **Infraestructura:** Docker Compose (Postgres 16, Mongo 7, Redis 7, Zookeeper, Kafka 7.5)
 
 ## Estructura del Proyecto
@@ -45,8 +46,9 @@ dev-chat-movile/
 
 ## Estado Actual
 - Fase 1 ✅ — Entorno Local (Docker, .env, estructura, MCP)
-- Fase 2 — Backend Auth & Usuarios (SIGUIENTE)
-- Sin commits realizados
+- Fase 2 ✅ — Backend Auth & Usuarios (Express, DBs, Auth OTP, Perfiles, Contactos)
+- Fase 3 ✅ — Mensajería Real-time (Socket.io, Mensajes, Estados, Conversaciones, Grupos, Typing)
+- Fase 4 — App React Native (SIGUIENTE)
 
 ## Issues en Linear
 
@@ -67,15 +69,15 @@ dev-chat-movile/
 | RIC-20 Gestión de perfiles + Avatares | 📋 Todo |
 | RIC-21 Sistema de contactos + Seed | 📋 Todo |
 
-### Fase 3 (Backlog)
-| Issue | |
+### Fase 3 ✅ (Completada)
+| Issue | Estado |
 |---|---|
-| RIC-22 Servidor Socket.io con auth y rooms | 📋 |
-| RIC-23 Flujo completo de envío de mensajes | 📋 |
-| RIC-24 Estados de mensaje (✓ ✓✓ ✓✓🔵) | 📋 |
-| RIC-25 API de conversaciones | 📋 |
-| RIC-26 Grupos básicos | 📋 |
-| RIC-27 Typing indicators + Online status | 📋 |
+| RIC-22 Servidor Socket.io con auth y rooms | ✅ Done |
+| RIC-23 Flujo completo de envío de mensajes | ✅ Done |
+| RIC-24 Estados de mensaje (✓ ✓✓ ✓✓🔵) | ✅ Done |
+| RIC-25 API de conversaciones | ✅ Done |
+| RIC-26 Grupos básicos | ✅ Done |
+| RIC-27 Typing indicators + Online status | ✅ Done |
 
 ### Fase 4 (Backlog)
 | Issue | |
@@ -101,6 +103,11 @@ dev-chat-movile/
 | RIC-38 Beta con Expo Go (testers) | 📋 |
 | RIC-39 Build APK Android + Play Store | 📋 |
 | RIC-40 Ruta de escalado gradual | 📋 |
+
+## Testing de la API
+- **Swagger UI:** `http://localhost:3001/api-docs` (cuando el servidor corre)
+- **REST Client:** Abrir `apps/api/api.http` en VS Code con la extension `humao.rest-client`
+- **Socket.IO:** Cliente conecta a `http://localhost:3001` con `{ auth: { token } }`
 
 ## Conexiones Externas (MCP)
 - **Notion:** Documentación del proyecto en Notion (página "Proyecto Chat Movile")
