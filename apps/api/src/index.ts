@@ -1,15 +1,18 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import path from 'path';
 
 import { env } from './config/env';
 import { connectPostgres } from './config/postgres';
 import { connectMongo } from './config/mongo';
 import { connectRedis } from './config/redis';
 import { connectKafka } from './config/kafka';
+import { initSchema } from './config/schema';
 import { initSocket } from './socket';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
+import usersRouter from './routes/users';
 import { errorHandler } from './middlewares/errorHandler';
 import { logger } from './lib/logger';
 
@@ -25,6 +28,8 @@ async function bootstrap() {
     ),
   ]);
 
+  await initSchema();
+
   const app = express();
 
   app.use(cors());
@@ -32,7 +37,9 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
 
   app.use('/health', healthRouter);
+  app.use('/uploads', express.static(path.resolve(env.MEDIA_LOCAL_PATH)));
   app.use('/auth', authRouter);
+  app.use('/users', usersRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });
