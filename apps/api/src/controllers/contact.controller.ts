@@ -10,7 +10,7 @@ const syncSchema = z.object({
 export async function sync(req: Request, res: Response, next: NextFunction) {
   try {
     const { phones } = syncSchema.parse(req.body);
-    const contacts = await contactService.syncContacts(req.user!.userId, phones);
+    const contacts = await contactService.syncContacts(req.user!.phone, phones);
     res.json({ contacts });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -23,7 +23,7 @@ export async function sync(req: Request, res: Response, next: NextFunction) {
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
-    const contacts = await contactService.listContacts(req.user!.userId);
+    const contacts = await contactService.listContacts(req.user!.phone);
     res.json({ contacts });
   } catch (err) {
     next(err as Error);
@@ -32,7 +32,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
-    await contactService.removeContact(req.params.id, req.user!.userId);
+    await contactService.removeContact(req.params.id, req.user!.phone);
     res.json({ message: 'Contacto eliminado' });
   } catch (err) {
     next(err as Error);

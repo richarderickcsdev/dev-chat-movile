@@ -33,8 +33,12 @@ function rowToProfile(row: any): ContactWithProfile {
   };
 }
 
-export async function syncContacts(userId: string, phones: string[]): Promise<ContactWithProfile[]> {
+export async function syncContacts(phone: string, phones: string[]): Promise<ContactWithProfile[]> {
   if (phones.length === 0) return [];
+
+  const me = await pgPool.query('SELECT id FROM users WHERE phone = $1', [phone]);
+  if (me.rows.length === 0) throw new AppError(404, 'Usuario no encontrado');
+  const userId = me.rows[0].id;
 
   const existingUsers = await pgPool.query(
     `SELECT id, phone, name, avatar_url, bio FROM users WHERE phone = ANY($1::varchar[])`,
@@ -49,9 +53,9 @@ export async function syncContacts(userId: string, phones: string[]): Promise<Co
 
   for (const row of existingUsers.rows) {
     if (row.id === userId) continue;
-    values.push(`($1, $${idx}, $${idx + 1})`);
-    params.push(row.id, row.name || row.phone);
-    idx += 2;
+    values.push(`($1, $${idx}, $${idx + 1}, $${idx + 2})`);
+    params.push(row.id, row.name || row.phone, row.phone);
+    idx += 3;
   }
 
   if (values.length === 0) return [];
@@ -65,10 +69,17 @@ export async function syncContacts(userId: string, phones: string[]): Promise<Co
 
   logger.info({ userId, contactsFound: existingUsers.rows.length }, 'Contactos sincronizados');
 
-  return listContacts(userId);
+  return listContacts(phone);
 }
 
-export async function listContacts(userId: string): Promise<ContactWithProfile[]> {
+async function resolveUserId(phone: string): Promise<string> {
+  const result = await pgPool.query('SELECT id FROM users WHERE phone = $1', [phone]);
+  if (result.rows.length === 0) throw new AppError(404, 'Usuario no encontrado');
+  return result.rows[0].id;
+}
+
+export async function listContacts(phone: string): Promise<ContactWithProfile[]> {
+  const userId = await resolveUserId(phone);
   const result = await pgPool.query(
     `SELECT c.id, c.contact_id, c.name, c.phone,
             u.name AS contact_name, u.avatar_url, u.bio, c.created_at
@@ -82,7 +93,8 @@ export async function listContacts(userId: string): Promise<ContactWithProfile[]
   return result.rows.map(rowToProfile);
 }
 
-export async function removeContact(contactId: string, userId: string): Promise<void> {
+export async function removeContact(contactId: string, phone: string): Promise<void> {
+  const userId = await resolveUserId(phone);
   const result = await pgPool.query(
     'DELETE FROM contacts WHERE id = $1 AND user_id = $2 RETURNING id',
     [contactId, userId],

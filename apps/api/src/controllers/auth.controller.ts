@@ -4,11 +4,11 @@ import * as authService from '../services/auth.service';
 import { AppError } from '../middlewares/errorHandler';
 
 const sendOtpSchema = z.object({
-  phone: z.string().min(10).max(15).regex(/^\d+$/),
+  phone: z.string().min(10).max(15).regex(/^\+?\d+$/),
 });
 
 const verifyOtpSchema = z.object({
-  phone: z.string().min(10).max(15).regex(/^\d+$/),
+  phone: z.string().min(10).max(15).regex(/^\+?\d+$/),
   code: z.string().length(6).regex(/^\d{6}$/),
 });
 
