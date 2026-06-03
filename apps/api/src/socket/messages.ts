@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
 import { z } from 'zod';
-import { createMessage, getMessages } from '../services/message.service';
+import { createMessage, getMessages, markAsDelivered, markAsRead } from '../services/message.service';
 import { getIO } from './index';
 import { logger } from '../lib/logger';
 import { SocketAuth } from './auth';
@@ -11,8 +11,19 @@ const sendMessageSchema = z.object({
   content: z.string().min(1).max(5000),
 });
 
+const deliveredSchema = z.object({
+  messageIds: z.array(z.string().min(1)).min(1).max(100),
+  conversationId: z.string().min(1),
+});
+
+const readSchema = z.object({
+  messageIds: z.array(z.string().min(1)).min(1).max(100),
+  conversationId: z.string().min(1),
+});
+
 export function registerMessageHandlers(socket: Socket): void {
   const auth = (socket as any).auth as SocketAuth;
+  const io = getIO();
 
   socket.on('message:send', async (data: unknown) => {
     try {
@@ -41,6 +52,43 @@ export function registerMessageHandlers(socket: Socket): void {
       } else {
         logger.error({ err }, 'Error al enviar mensaje');
         socket.emit('message:error', { error: 'Error interno al enviar mensaje' });
+      }
+    }
+  });
+
+  socket.on('messages:delivered', async (data: unknown) => {
+    try {
+      const { messageIds, conversationId } = deliveredSchema.parse(data);
+      await markAsDelivered(messageIds);
+
+      io.to(conversationId).emit('messages:status', {
+        messageIds,
+        conversationId,
+        status: 'delivered',
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        socket.emit('message:error', { error: 'Datos invalidos' });
+      }
+    }
+  });
+
+  socket.on('messages:read', async (data: unknown) => {
+    try {
+      const { messageIds, conversationId } = readSchema.parse(data);
+      const updatedIds = await markAsRead(messageIds, auth.userId);
+
+      if (updatedIds.length > 0) {
+        io.to(conversationId).emit('messages:status', {
+          messageIds: updatedIds,
+          conversationId,
+          status: 'read',
+          readBy: auth.userId,
+        });
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        socket.emit('message:error', { error: 'Datos invalidos' });
       }
     }
   });

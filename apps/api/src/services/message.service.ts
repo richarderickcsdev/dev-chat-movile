@@ -45,6 +45,27 @@ export async function createMessage(senderId: string, input: SendMessageInput): 
   return message;
 }
 
+export async function markAsDelivered(messageIds: string[]): Promise<void> {
+  await Message.updateMany(
+    { _id: { $in: messageIds }, status: 'sent' },
+    { $set: { status: 'delivered' } },
+  );
+}
+
+export async function markAsRead(messageIds: string[], readerId: string): Promise<string[]> {
+  const result = await Message.updateMany(
+    { _id: { $in: messageIds }, senderId: { $ne: readerId }, status: { $ne: 'read' } },
+    { $set: { status: 'read' } },
+  );
+
+  const updated = await Message.find(
+    { _id: { $in: messageIds }, senderId: { $ne: readerId } },
+    { _id: 1, senderId: 1, status: 1 },
+  ).lean();
+
+  return updated.map(m => m._id.toString());
+}
+
 export async function getMessages(
   conversationId: string,
   options: { limit?: number; before?: string } = {},
