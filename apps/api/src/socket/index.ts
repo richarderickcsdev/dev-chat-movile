@@ -61,6 +61,18 @@ export function initSocket(httpServer: HttpServer): SocketServer {
 
     registerMessageHandlers(socket);
 
+    socket.on('typing:start', async (conversationId: string) => {
+      const key = redisKey('typing', `${conversationId}:${userId}`);
+      await redis.setex(key, 5, '1');
+      socket.to(conversationId).emit('typing:start', { conversationId, userId });
+    });
+
+    socket.on('typing:stop', async (conversationId: string) => {
+      const key = redisKey('typing', `${conversationId}:${userId}`);
+      await redis.del(key);
+      socket.to(conversationId).emit('typing:stop', { conversationId, userId });
+    });
+
     socket.on('heartbeat', async () => {
       await redis.setex(redisKey('online', userId), ONLINE_TTL, '1');
     });
