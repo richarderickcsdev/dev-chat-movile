@@ -9,6 +9,7 @@ import { connectRedis } from './config/redis';
 import { connectKafka } from './config/kafka';
 import { initSocket } from './socket';
 import healthRouter from './routes/health';
+import authRouter from './routes/auth';
 import { errorHandler } from './middlewares/errorHandler';
 import { logger } from './lib/logger';
 
@@ -31,6 +32,7 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
 
   app.use('/health', healthRouter);
+  app.use('/auth', authRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });

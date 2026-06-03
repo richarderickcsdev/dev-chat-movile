@@ -19,6 +19,9 @@ export const env = {
   MONGODB_URI: process.env.MONGODB_URI || '',
   REDIS_URL: process.env.REDIS_URL || '',
   KAFKA_BROKERS: (process.env.KAFKA_BROKERS || '127.0.0.1:9092').split(','),
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-in-prod',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  OTP_BYPASS_CODE: process.env.OTP_BYPASS_CODE || '',
 };
 
 const required = ['DATABASE_URL', 'MONGODB_URI', 'REDIS_URL'];
