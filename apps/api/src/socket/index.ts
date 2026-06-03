@@ -3,6 +3,7 @@ import { Server as SocketServer, Socket } from 'socket.io';
 import { redis } from '../config/redis';
 import { logger } from '../lib/logger';
 import { verifySocketToken, SocketAuth } from './auth';
+import { registerMessageHandlers } from './messages';
 
 const ONLINE_TTL = 35;
 const HEARTBEAT_TOLERANCE = 10;
@@ -57,6 +58,8 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     await redis.set(redisKey('socket', socket.id), userId);
     await redis.sadd(redisKey('user', userId), socket.id);
     await redis.setex(redisKey('online', userId), ONLINE_TTL, '1');
+
+    registerMessageHandlers(socket);
 
     socket.on('heartbeat', async () => {
       await redis.setex(redisKey('online', userId), ONLINE_TTL, '1');
