@@ -13,6 +13,7 @@ import { initSocket } from './socket';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
+import contactsRouter from './routes/contacts';
 import { errorHandler } from './middlewares/errorHandler';
 import { logger } from './lib/logger';
 
@@ -40,6 +41,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(path.resolve(env.MEDIA_LOCAL_PATH)));
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
+  app.use('/contacts', contactsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });

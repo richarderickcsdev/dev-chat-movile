@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "seed": "npx ts-node src/seed.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
