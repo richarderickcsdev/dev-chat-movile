@@ -11,6 +11,7 @@ export default function ChatScreen({ route }: any) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  const [editMode, setEditMode] = useState<{ id: string; content: string } | null>(null);
   const flatRef = useRef<FlatList>(null);
   const onNewMessage = useRef<((msg: Message) => void) | null>(null);
   const insets = useSafeAreaInsets();
@@ -45,28 +46,64 @@ export default function ChatScreen({ route }: any) {
 
   function sendMessage() {
     if (!text.trim()) return;
+    if (editMode) {
+      handleEditSave(editMode.id, text.trim());
+      return;
+    }
     const tempId = Date.now().toString();
     const socket = getSocket();
     socket.emit('message:send', { tempId, conversationId, content: text.trim() });
     setText('');
   }
 
-  function handleDeleteMessage(msg: Message) {
+  async function handleEditSave(msgId: string, content: string) {
+    try {
+      await api.patch(`/conversations/${conversationId}/messages/${msgId}`, { content });
+      setMessages((prev) => prev.map((m) => (m._id === msgId ? { ...m, content } : m)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setEditMode(null);
+      setText('');
+    }
+  }
+
+  function handleLongPress(msg: Message) {
     if (msg.senderId !== userId) return;
-    Alert.alert('Eliminar mensaje', '¿Quieres eliminar este mensaje?', [
+    Alert.alert('Mensaje', '¿Qué quieres hacer?', [
       { text: 'Cancelar', style: 'cancel' },
       {
+        text: 'Editar',
+        onPress: () => {
+          setEditMode({ id: msg._id, content: msg.content });
+          setText(msg.content);
+        },
+      },
+      {
         text: 'Eliminar', style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.del(`/conversations/${conversationId}/messages/${msg._id}`);
-            setMessages((prev) => prev.filter((m) => m._id !== msg._id));
-          } catch (err) {
-            console.error(err);
-          }
+        onPress: () => {
+          Alert.alert('Eliminar mensaje', '¿Seguro?', [
+            { text: 'No', style: 'cancel' },
+            {
+              text: 'Sí, eliminar', style: 'destructive',
+              onPress: async () => {
+                try {
+                  await api.del(`/conversations/${conversationId}/messages/${msg._id}`);
+                  setMessages((prev) => prev.filter((m) => m._id !== msg._id));
+                } catch (err) {
+                  console.error(err);
+                }
+              },
+            },
+          ]);
         },
       },
     ]);
+  }
+
+  function cancelEdit() {
+    setEditMode(null);
+    setText('');
   }
 
   const userId = user?.id || '';
@@ -87,7 +124,7 @@ export default function ChatScreen({ route }: any) {
           renderItem={({ item }) => (
             <TouchableOpacity
               activeOpacity={0.8}
-              onLongPress={() => handleDeleteMessage(item)}
+              onLongPress={() => handleLongPress(item)}
             >
               <View style={[styles.bubble, item.senderId === userId ? styles.mine : styles.other]}>
                 <Text style={styles.msgText}>{item.content}</Text>
@@ -101,9 +138,20 @@ export default function ChatScreen({ route }: any) {
           }
         />
         <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-          <TextInput style={styles.input} value={text} onChangeText={setText} placeholder="Mensaje..." placeholderTextColor="#999" />
+          {editMode && (
+            <TouchableOpacity onPress={cancelEdit} style={{ marginRight: 8 }}>
+              <Text style={{ color: '#c62828', fontWeight: '600' }}>✕</Text>
+            </TouchableOpacity>
+          )}
+          <TextInput
+            style={styles.input}
+            value={text}
+            onChangeText={setText}
+            placeholder={editMode ? 'Editando...' : 'Mensaje...'}
+            placeholderTextColor="#999"
+          />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-            <Text style={styles.sendText}>Enviar</Text>
+            <Text style={styles.sendText}>{editMode ? 'Editar' : 'Enviar'}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

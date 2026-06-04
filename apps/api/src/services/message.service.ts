@@ -21,6 +21,22 @@ export async function deleteMessage(messageId: string, userId: string): Promise<
   return message;
 }
 
+export async function editMessage(
+  messageId: string,
+  userId: string,
+  content: string,
+): Promise<IMessage | null> {
+  const message = await Message.findOneAndUpdate(
+    { _id: messageId, senderId: userId },
+    { $set: { content, edited: true } },
+    { new: true },
+  );
+  if (!message) return null;
+
+  logger.info({ messageId, userId }, 'Mensaje editado');
+  return message;
+}
+
 export async function createMessage(senderId: string, input: SendMessageInput): Promise<IMessage> {
   const message = await Message.create({
     conversationId: input.conversationId,

@@ -77,3 +77,23 @@ export async function deleteMessage(req: Request, res: Response, next: NextFunct
     next(err as Error);
   }
 }
+
+export async function editMessage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const schema = z.object({ content: z.string().min(1).max(5000) });
+    const { content } = schema.parse(req.body);
+    const msg = await messageService.editMessage(
+      req.params.messageId,
+      req.user!.userId,
+      content,
+    );
+    if (!msg) return next(new AppError(404, 'Mensaje no encontrado o no autorizado'));
+    res.json({ _id: msg._id.toString(), content: msg.content });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      next(new AppError(400, 'Datos invalidos'));
+    } else {
+      next(err as Error);
+    }
+  }
+}

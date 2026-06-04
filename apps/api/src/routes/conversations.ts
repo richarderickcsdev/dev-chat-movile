@@ -66,6 +66,8 @@ router.get('/:id/messages', authenticate, conversationController.getMessages);
 
 router.delete('/:conversationId/messages/:messageId', authenticate, conversationController.deleteMessage);
 
+router.patch('/:conversationId/messages/:messageId', authenticate, conversationController.editMessage);
+
 router.delete('/:id', authenticate, conversationController.remove);
 
 export default router;
