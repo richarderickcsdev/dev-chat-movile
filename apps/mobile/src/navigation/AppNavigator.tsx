@@ -11,6 +11,7 @@ import OTPScreen from '../screens/OTPScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import ChatsScreen from '../screens/ChatsScreen';
 import ChatScreen from '../screens/ChatScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -101,6 +102,7 @@ export default function AppNavigator() {
               {(props) => <ChatsScreen {...props} onLogout={goToLogout} />}
             </Stack.Screen>
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff', headerTitle: '' }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
           </>
         )}
       </Stack.Navigator>

@@ -47,6 +47,20 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ marginLeft: 8 }}>
+          {user?.avatar_url ? (
+            <Image
+              source={{ uri: user.avatar_url.startsWith('http') ? user.avatar_url : `${BASE_URL}${user.avatar_url}` }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          ) : (
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>{(user?.name || '?')[0].toUpperCase()}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ),
       headerRight: () => (
         <TouchableOpacity onPress={handleLogout} style={{ paddingHorizontal: 12 }}>
           <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>Salir</Text>
