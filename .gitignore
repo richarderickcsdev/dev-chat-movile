@@ -5,3 +5,7 @@ dist/
 .turbo/
 opencode.json
 *.log
+.expo/
+*.jpg
+mobile-temp/
+get_states.js

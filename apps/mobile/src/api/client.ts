@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = 'http://10.2.2.252:3001';
+export const BASE_URL = 'http://192.168.18.154:3001';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
