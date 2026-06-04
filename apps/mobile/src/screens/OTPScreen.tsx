@@ -3,7 +3,6 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator, Platform,
 } from 'react-native';
-import { BASE_URL } from '../api/client';
 
 const RESEND_DELAY = 60;
 
@@ -13,11 +12,10 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(RESEND_DELAY);
   const [canResend, setCanResend] = useState(false);
-  const inputRefs = useRef<TextInput[]>([]);
-  const codesRef = useRef<string[]>(Array(6).fill(''));
+  const hiddenRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    setTimeout(() => hiddenRef.current?.focus(), 300);
   }, []);
 
   useEffect(() => {
@@ -26,49 +24,30 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
     return () => clearInterval(id);
   }, [timer]);
 
-  function updateCode(text: string, index: number) {
+  function handleChange(text: string) {
     if (loading) return;
-    const digit = text.replace(/[^0-9]/g, '');
-
-    if (digit.length > 1) {
-      const digits = digit.split('').slice(0, 6);
-      codesRef.current = digits;
-      setCodes([...digits]);
-      const nextEmpty = digits.findIndex((d) => !d);
-      const focusIdx = nextEmpty === -1 ? 5 : nextEmpty;
-      inputRefs.current[focusIdx]?.focus();
-      if (digits.every((d) => d !== '')) {
-        handleVerify(digits.join(''));
-      }
-      return;
-    }
-
-    const newCodes = [...codesRef.current];
-    newCodes[index] = digit;
-    codesRef.current = newCodes;
-    setCodes(newCodes);
-    if (digit && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+    const digits = text.replace(/[^0-9]/g, '');
+    const arr = digits.split('').slice(0, 6);
+    while (arr.length < 6) arr.push('');
+    setCodes(arr);
+    if (digits.length >= 6) {
+      handleVerify(digits.slice(0, 6));
     }
   }
 
-  function handleKeyPress(key: string, index: number) {
-    if (key === 'Backspace' && !codesRef.current[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
+  function focusInput() {
+    hiddenRef.current?.focus();
   }
 
-  async function handleVerify(code?: string) {
-    const otp = code || codesRef.current.join('');
-    if (otp.length !== 6) return;
+  async function handleVerify(code: string) {
+    if (code.length !== 6) return;
     setLoading(true);
     try {
-      await onVerified(phone, otp);
+      await onVerified(phone, code);
     } catch (err: any) {
       Alert.alert('Código inválido', err.message);
-      codesRef.current = Array(6).fill('');
       setCodes(Array(6).fill(''));
-      inputRefs.current[0]?.focus();
+      hiddenRef.current?.focus();
     } finally {
       setLoading(false);
     }
@@ -77,7 +56,7 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
   async function handleResend() {
     if (!canResend || loading) return;
     try {
-      const res = await fetch(`${BASE_URL}/auth/send-otp`, {
+      const res = await fetch('http://192.168.18.154:3001/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -88,9 +67,8 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
       }
       setTimer(RESEND_DELAY);
       setCanResend(false);
-      codesRef.current = Array(6).fill('');
       setCodes(Array(6).fill(''));
-      inputRefs.current[0]?.focus();
+      hiddenRef.current?.focus();
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }
@@ -111,54 +89,35 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
         <Text style={styles.phoneText}>{displayPhone}</Text>
       </Text>
 
-      <View style={styles.codeRow}>
+      <TouchableOpacity style={styles.codeRow} onPress={focusInput} activeOpacity={1}>
         {codes.map((digit, i) => (
-          <TextInput
-            key={i}
-            ref={(ref) => { inputRefs.current[i] = ref as TextInput; }}
-            style={[styles.codeBox, digit ? styles.codeBoxFilled : null]}
-            keyboardType={Platform.OS === 'web' ? 'default' : 'number-pad'}
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChangeText={(t) => {
-              if (t === '') {
-                if (i > 0 && !codesRef.current[i]) {
-                  inputRefs.current[i - 1]?.focus();
-                  return;
-                }
-              }
-              updateCode(t, i);
-            }}
-            onSubmitEditing={() => {
-              if (codesRef.current.every((d) => d !== '')) handleVerify();
-            }}
-            selectTextOnFocus
-            editable={!loading}
-          />
+          <View key={i} style={[styles.codeBox, digit ? styles.codeBoxFilled : null, i === 0 && codes.every(d => !d) && styles.codeBoxActive]}>
+            <Text style={styles.codeText}>{digit}</Text>
+          </View>
         ))}
-      </View>
-
-      <TouchableOpacity onPress={() => {
-        codesRef.current = Array(6).fill('');
-        setCodes(Array(6).fill(''));
-        inputRefs.current[0]?.focus();
-      }} style={{ alignItems: 'center', marginTop: 16 }}>
-        <Text style={{ color: '#999', fontSize: 13 }}>Limpiar</Text>
       </TouchableOpacity>
+
+      <TextInput
+        ref={hiddenRef}
+        style={styles.hiddenInput}
+        keyboardType={Platform.OS === 'web' ? 'default' : 'number-pad'}
+        inputMode="numeric"
+        maxLength={6}
+        value={codes.filter(d => d).join('')}
+        onChangeText={handleChange}
+        autoFocus
+        selectTextOnFocus
+        caretHidden
+      />
 
       {loading && <ActivityIndicator style={{ marginTop: 24 }} size="large" color="#075E54" />}
 
       <TouchableOpacity
         style={[styles.verifyButton, (!allFilled || loading) && styles.verifyButtonDisabled]}
-        onPress={() => handleVerify()}
+        onPress={() => handleVerify(codes.filter(d => d).join(''))}
         disabled={!allFilled || loading}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.verifyText}>Verificar</Text>
-        )}
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.verifyText}>Verificar</Text>}
       </TouchableOpacity>
 
       <View style={styles.resendSection}>
@@ -181,9 +140,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', color: '#1a1a1a', marginTop: 24 },
   subtitle: { fontSize: 15, color: '#666', marginTop: 12, lineHeight: 22 },
   phoneText: { fontWeight: '600', color: '#1a1a1a' },
-  codeRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 40, gap: 8 },
-  codeBox: { width: 48, height: 56, borderWidth: 2, borderColor: '#ddd', borderRadius: 12, textAlign: 'center', fontSize: 24, fontWeight: '700', color: '#1a1a1a' },
+  codeRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 40, gap: 10 },
+  codeBox: { width: 48, height: 56, borderWidth: 2, borderColor: '#ddd', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   codeBoxFilled: { borderColor: '#075E54', backgroundColor: '#f0faf8' },
+  codeBoxActive: { borderColor: '#075E54' },
+  codeText: { fontSize: 24, fontWeight: '700', color: '#1a1a1a' },
+  hiddenInput: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   verifyButton: { backgroundColor: '#075E54', borderRadius: 30, paddingVertical: 16, alignItems: 'center', marginTop: 32 },
   verifyButtonDisabled: { opacity: 0.5 },
   verifyText: { color: '#fff', fontSize: 18, fontWeight: '600' },
