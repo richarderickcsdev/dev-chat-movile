@@ -321,10 +321,13 @@ export default function ChatScreen({ route, navigation }: any) {
         </View>
       </KeyboardAvoidingView>
 
-      <Modal visible={!!fullscreenUri} transparent animationType="fade">
-        <TouchableOpacity style={styles.fullscreenBg} activeOpacity={1} onPress={() => setFullscreenUri(null)}>
+      <Modal visible={!!fullscreenUri} transparent animationType="fade" onRequestClose={() => setFullscreenUri(null)}>
+        <View style={styles.fullscreenBg}>
+          <TouchableOpacity style={styles.fullscreenClose} onPress={() => setFullscreenUri(null)}>
+            <Text style={styles.fullscreenCloseText}>✕</Text>
+          </TouchableOpacity>
           <Image source={{ uri: fullscreenUri || '' }} style={styles.fullscreenImage} resizeMode="contain" />
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -352,5 +355,7 @@ const styles = StyleSheet.create({
   imageMsg: { width: 200, height: 200, borderRadius: 6 },
   imageStatusRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 3, paddingRight: 2 },
   fullscreenBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  fullscreenClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  fullscreenCloseText: { color: '#fff', fontSize: 20, fontWeight: '600' },
   fullscreenImage: { width: '100%', height: '80%' },
 });
