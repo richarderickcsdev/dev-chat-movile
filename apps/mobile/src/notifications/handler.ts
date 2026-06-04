@@ -1,28 +1,33 @@
 import { AppState, Platform } from 'react-native';
 
-let appActive = true;
 let unreadCount = 0;
 
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
-    appActive = state === 'active';
-    if (appActive) {
+    if (state === 'active') {
       unreadCount = 0;
       try {
-        const Notifications = require('expo-notifications');
-        Notifications.setBadgeCountAsync(0);
+        require('expo-notifications').setBadgeCountAsync(0).catch(() => {});
       } catch {}
     }
   });
 }
 
-export function handleIncomingMessage(msg: any, partnerName?: string) {
-  if (appActive || Platform.OS === 'web') return;
-  unreadCount += 1;
-  const preview = msg.type === 'image' ? '📷 Imagen' : (msg.content || '').slice(0, 100);
-  const title = partnerName || 'Nuevo mensaje';
-
+function isAppActive(): boolean {
   try {
+    return AppState.currentState === 'active';
+  } catch {
+    return true;
+  }
+}
+
+export function handleIncomingMessage(msg: any) {
+  try {
+    if (isAppActive() || Platform.OS === 'web') return;
+    
+    unreadCount += 1;
+    const preview = msg.type === 'image' ? '📷 Imagen' : (msg.content || '').slice(0, 100);
+
     const Notifications = require('expo-notifications');
 
     if (Platform.OS === 'android') {
@@ -35,10 +40,18 @@ export function handleIncomingMessage(msg: any, partnerName?: string) {
     }
 
     Notifications.presentNotificationAsync({
-      title,
+      title: 'Nuevo mensaje',
       body: preview,
       data: { conversationId: msg.conversationId },
       badge: unreadCount,
     }).catch(() => {});
+  } catch {}
+}
+
+export function resetBadge() {
+  unreadCount = 0;
+  try {
+    const Notifications = require('expo-notifications');
+    Notifications.setBadgeCountAsync(0).catch(() => {});
   } catch {}
 }
