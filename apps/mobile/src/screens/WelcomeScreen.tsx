@@ -91,7 +91,9 @@ export default function WelcomeScreen({ navigation }: any) {
           keyboardType="phone-pad"
           value={phone}
           onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, ''))}
+          onSubmitEditing={handleNext}
           maxLength={10}
+          returnKeyType="go"
         />
       </View>
 

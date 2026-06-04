@@ -130,11 +130,22 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
               }
               updateCode(t, i);
             }}
+            onSubmitEditing={() => {
+              if (codesRef.current.every((d) => d !== '')) handleVerify();
+            }}
             selectTextOnFocus
             editable={!loading}
           />
         ))}
       </View>
+
+      <TouchableOpacity onPress={() => {
+        codesRef.current = Array(6).fill('');
+        setCodes(Array(6).fill(''));
+        inputRefs.current[0]?.focus();
+      }} style={{ alignItems: 'center', marginTop: 16 }}>
+        <Text style={{ color: '#999', fontSize: 13 }}>Limpiar</Text>
+      </TouchableOpacity>
 
       {loading && <ActivityIndicator style={{ marginTop: 24 }} size="large" color="#075E54" />}
 

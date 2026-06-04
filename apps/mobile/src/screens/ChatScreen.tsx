@@ -340,6 +340,8 @@ export default function ChatScreen({ route, navigation }: any) {
             onChangeText={handleTextChange}
             placeholder={editMode ? 'Editando...' : 'Mensaje...'}
             placeholderTextColor="#999"
+            onSubmitEditing={sendMessage}
+            returnKeyType="send"
           />
           <TouchableOpacity style={[styles.sendBtn, !text.trim() && !editMode ? styles.sendBtnDisabled : null]} onPress={sendMessage} disabled={!text.trim() && !editMode}>
             <Text style={styles.sendText}>{editMode ? 'Editar' : 'Enviar'}</Text>
