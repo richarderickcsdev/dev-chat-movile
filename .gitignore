@@ -9,3 +9,5 @@ opencode.json
 *.jpg
 mobile-temp/
 get_states.js
+simulate-bob.js
+bob-action.js
