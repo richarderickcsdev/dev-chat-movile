@@ -14,12 +14,12 @@ import ChatScreen from '../screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { isLoading, checkSession, setUser } = useAuth();
+  const { isLoading, checkSession, setUser, isAuthenticated } = useAuth();
   const [flow, setFlow] = useState<'loading' | 'auth' | 'profile' | 'app'>('loading');
 
   useEffect(() => {
     checkSession().then(setFlow);
-  }, []);
+  }, [isAuthenticated]);
 
   const [pendingTokens, setPendingTokens] = useState<{ access: string; refresh: string } | null>(null);
 
