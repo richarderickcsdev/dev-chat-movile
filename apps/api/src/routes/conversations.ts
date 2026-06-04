@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as conversationController from '../controllers/conversation.controller';
 import { authenticate } from '../middlewares/auth';
+import { upload } from '../config/uploads';
 
 const router = Router();
 
@@ -67,6 +68,8 @@ router.get('/:id/messages', authenticate, conversationController.getMessages);
 router.delete('/:conversationId/messages/:messageId', authenticate, conversationController.deleteMessage);
 
 router.patch('/:conversationId/messages/:messageId', authenticate, conversationController.editMessage);
+
+router.post('/:id/images', authenticate, upload.single('image'), conversationController.uploadImage);
 
 router.delete('/:id', authenticate, conversationController.remove);
 

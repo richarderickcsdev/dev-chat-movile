@@ -13,6 +13,10 @@ export interface Message {
   content: string;
   tempId?: string;
   status: 'sending' | 'sent' | 'delivered' | 'read';
+  type?: 'text' | 'image';
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   createdAt: string;
 }
 

@@ -2,8 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import * as conversationService from '../services/conversation.service';
 import * as messageService from '../services/message.service';
+import { Message } from '../models/message';
 import { getIO } from '../socket';
 import { AppError } from '../middlewares/errorHandler';
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
 
 const createSchema = z.object({
   participantId: z.string().min(1),
@@ -120,5 +124,62 @@ export async function editMessage(req: Request, res: Response, next: NextFunctio
     } else {
       next(err as Error);
     }
+  }
+}
+
+export async function uploadImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.file) throw new AppError(400, 'Archivo de imagen requerido');
+
+    const inputPath = req.file.path;
+    const outputFilename = `msg-${req.file.filename}`;
+    const outputPath = path.join(path.dirname(inputPath), outputFilename);
+
+    const metadata = await sharp(inputPath).metadata();
+
+    await sharp(inputPath)
+      .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 75 })
+      .toFile(outputPath);
+
+    fs.unlinkSync(inputPath);
+
+    const imageUrl = `/uploads/${outputFilename}`;
+
+    const message = await messageService.createMessage(req.user!.userId, {
+      conversationId: req.params.conversationId,
+      content: 'Imagen',
+      tempId: `img_${Date.now()}`,
+    });
+
+    const updated = await Message.findByIdAndUpdate(
+      message._id,
+      { type: 'image', imageUrl, imageWidth: metadata.width || 0, imageHeight: metadata.height || 0 },
+      { new: true },
+    );
+
+    await conversationService.updateLastMessage(req.params.conversationId, {
+      content: 'Imagen',
+      senderId: req.user!.userId,
+      createdAt: message.createdAt,
+    });
+
+    const io = getIO();
+    io.to(req.params.conversationId).emit('message:new', {
+      _id: message._id.toString(),
+      conversationId: req.params.conversationId,
+      senderId: req.user!.userId,
+      content: 'Imagen',
+      type: 'image',
+      imageUrl,
+      imageWidth: metadata.width || 0,
+      imageHeight: metadata.height || 0,
+      status: 'sent',
+      createdAt: message.createdAt.toISOString(),
+    });
+
+    res.status(201).json({ _id: message._id.toString(), imageUrl });
+  } catch (err) {
+    next(err as Error);
   }
 }

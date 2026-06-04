@@ -6,6 +6,10 @@ export interface IMessage extends Document {
   content: string;
   tempId: string;
   status: 'sending' | 'sent' | 'delivered' | 'read';
+  type: 'text' | 'image';
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +25,10 @@ const messageSchema = new Schema<IMessage>(
       enum: ['sending', 'sent', 'delivered', 'read'],
       default: 'sent',
     },
+    type: { type: String, enum: ['text', 'image'], default: 'text' },
+    imageUrl: { type: String },
+    imageWidth: { type: Number },
+    imageHeight: { type: Number },
   },
   { timestamps: true },
 );
