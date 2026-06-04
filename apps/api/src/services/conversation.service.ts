@@ -1,5 +1,7 @@
 import { Conversation, IConversation } from '../models/conversation';
 import { Message } from '../models/message';
+import { findByIdPublic } from './user.service';
+import { redis } from '../config/redis';
 import { logger } from '../lib/logger';
 
 export async function createConversation(participants: string[]): Promise<IConversation> {
@@ -18,12 +20,42 @@ export async function createConversation(participants: string[]): Promise<IConve
   return conversation;
 }
 
-export async function listConversations(userId: string): Promise<IConversation[]> {
+export async function listConversations(userId: string) {
   const conversations = await Conversation.find({ participants: userId })
     .sort({ updatedAt: -1 })
     .lean();
 
-  return conversations as unknown as IConversation[];
+  const enriched = await Promise.all(
+    conversations.map(async (conv: any) => {
+      const partnerId = conv.participants.find((p: string) => p !== userId);
+      let partner = null;
+      if (partnerId) {
+        try {
+          partner = await findByIdPublic(partnerId);
+        } catch {
+          partner = { id: partnerId, name: '', bio: '', avatar_url: '' };
+        }
+      }
+
+      const online = partnerId ? (await redis.get(`io:online:${partnerId}`)) !== null : false;
+
+      return {
+        _id: conv._id.toString(),
+        participants: conv.participants,
+        partner: partner ? {
+          id: partner.id,
+          name: partner.name || partnerId,
+          avatar_url: partner.avatar_url,
+        } : null,
+        lastMessage: conv.lastMessage || null,
+        online,
+        createdAt: conv.createdAt,
+        updatedAt: conv.updatedAt,
+      };
+    }),
+  );
+
+  return enriched;
 }
 
 export async function getConversationById(id: string): Promise<IConversation | null> {
@@ -58,4 +90,10 @@ export async function updateLastMessage(
     },
     updatedAt: new Date(),
   });
+}
+
+export async function deleteConversation(conversationId: string): Promise<void> {
+  await Conversation.findByIdAndDelete(conversationId);
+  await Message.deleteMany({ conversationId });
+  logger.info({ conversationId }, 'Conversacion eliminada');
 }

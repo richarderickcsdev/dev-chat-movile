@@ -69,3 +69,4 @@ bootstrap().catch((err) => {
   logger.fatal({ err }, 'Error fatal al iniciar');
   process.exit(1);
 });
+

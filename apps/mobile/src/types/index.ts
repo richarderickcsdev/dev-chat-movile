@@ -25,14 +25,22 @@ export interface Contact {
   bio: string;
 }
 
+export interface ConversationPartner {
+  id: string;
+  name: string;
+  avatar_url: string;
+}
+
 export interface Conversation {
   _id: string;
   participants: string[];
+  partner: ConversationPartner | null;
   lastMessage?: {
     content: string;
     senderId: string;
     createdAt: string;
   };
+  online: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -64,4 +64,6 @@ router.get('/', authenticate, conversationController.list);
  */
 router.get('/:id/messages', authenticate, conversationController.getMessages);
 
+router.delete('/:id', authenticate, conversationController.remove);
+
 export default router;

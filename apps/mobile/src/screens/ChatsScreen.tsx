@@ -1,8 +1,32 @@
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Alert, Animated } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/client';
+import { api, BASE_URL } from '../api/client';
 import { Conversation } from '../types';
+
+const ITEM_HEIGHT = 72;
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (mins < 1) return 'Ahora';
+  if (mins < 60) return mins + ' min';
+  if (hours < 24) return hours + ' h';
+  if (days === 1) return 'Ayer';
+  if (days < 7) return d.toLocaleDateString('es', { weekday: 'long' });
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+}
+
+function getAvatarUrl(path: string): string | null {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${BASE_URL}${path}`;
+}
 
 export default function ChatsScreen({ navigation, onLogout }: any) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -26,7 +50,7 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
   async function loadConversations() {
     try {
       const data = await api.get<{ conversations: Conversation[] }>('/conversations');
-      setConversations(data.conversations);
+      setConversations(data.conversations || []);
     } catch (err) {
       console.error(err);
     }
@@ -45,16 +69,66 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
     ]);
   }
 
+  function handleDelete(convId: string, name: string) {
+    Alert.alert('Eliminar chat', `¿Eliminar conversación con ${name}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.del(`/conversations/${convId}`);
+            setConversations((prev) => prev.filter((c) => c._id !== convId));
+          } catch (err) {
+            console.error(err);
+          }
+        },
+      },
+    ]);
+  }
+
+  const getItemLayout = useCallback(
+    (_data: any, index: number) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }),
+    [],
+  );
+
   function renderItem({ item }: { item: Conversation }) {
-    const displayName = item.participants?.join(', ') || 'Chat';
+    const name = item.partner?.name || item.participants?.join(', ') || 'Chat';
+    const avatarUrl = item.partner?.avatar_url ? getAvatarUrl(item.partner.avatar_url) : null;
+    const timestamp = item.lastMessage?.createdAt || item.updatedAt;
+    const isMine = item.lastMessage?.senderId === user?.id;
+
     return (
-      <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Chat', { conversationId: item._id })}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || '?'}</Text>
+      <TouchableOpacity
+        style={styles.item}
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate('Chat', { conversationId: item._id })}
+        onLongPress={() => handleDelete(item._id, name)}
+      >
+        <View style={styles.avatarContainer}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarText}>{name[0]?.toUpperCase() || '?'}</Text>
+            </View>
+          )}
+          {item.online && <View style={styles.onlineDot} />}
         </View>
+
         <View style={styles.info}>
-          <Text style={styles.name}>{displayName}</Text>
-          {item.lastMessage && <Text style={styles.lastMsg} numberOfLines={1}>{item.lastMessage.content}</Text>}
+          <View style={styles.topRow}>
+            <Text style={styles.name} numberOfLines={1}>{name}</Text>
+            <Text style={styles.timestamp}>{formatTime(timestamp)}</Text>
+          </View>
+          <View style={styles.bottomRow}>
+            {item.lastMessage ? (
+              <Text style={styles.lastMsg} numberOfLines={1}>
+                {isMine && 'Tú: '}{item.lastMessage.content}
+              </Text>
+            ) : (
+              <Text style={styles.noMsg}>Sin mensajes</Text>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -68,12 +142,18 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
         keyExtractor={(item) => item._id}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        getItemLayout={getItemLayout}
         ListEmptyComponent={
           <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>💬</Text>
             <Text style={styles.emptyText}>No hay conversaciones</Text>
-            <Text style={styles.emptySubtext}>Usa el REST Client o Swagger para crear una</Text>
+            <Text style={styles.emptySubtext}>
+              Para crear una, usa el REST Client{'\n'}
+              POST /conversations
+            </Text>
           </View>
         }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
     </View>
   );
@@ -81,13 +161,22 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  item: { flexDirection: 'row', padding: 16, borderBottomWidth: 0.5, borderBottomColor: '#ddd', alignItems: 'center' },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#075E54', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarText: { fontSize: 20, color: '#fff', fontWeight: '600' },
+  item: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', height: ITEM_HEIGHT },
+  separator: { height: 0.5, backgroundColor: '#e8e8e8', marginLeft: 76 },
+  avatarContainer: { position: 'relative', marginRight: 12 },
+  avatar: { width: 52, height: 52, borderRadius: 26 },
+  avatarPlaceholder: { backgroundColor: '#075E54', justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: 22, color: '#fff', fontWeight: '600' },
+  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#25D366', borderWidth: 2, borderColor: '#fff' },
   info: { flex: 1, justifyContent: 'center' },
-  name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a' },
-  lastMsg: { fontSize: 14, color: '#666', marginTop: 2 },
-  empty: { alignItems: 'center', marginTop: 80 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
+  name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', flex: 1, marginRight: 8 },
+  timestamp: { fontSize: 12, color: '#999' },
+  bottomRow: { flexDirection: 'row', alignItems: 'center' },
+  lastMsg: { fontSize: 14, color: '#666', flex: 1 },
+  noMsg: { fontSize: 14, color: '#bbb', fontStyle: 'italic' },
+  empty: { alignItems: 'center', marginTop: 120 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 18, fontWeight: '600', color: '#999' },
-  emptySubtext: { fontSize: 14, color: '#bbb', marginTop: 8 },
+  emptySubtext: { fontSize: 14, color: '#bbb', marginTop: 8, textAlign: 'center' },
 });

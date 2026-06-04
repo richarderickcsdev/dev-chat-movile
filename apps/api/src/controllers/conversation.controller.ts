@@ -54,3 +54,12 @@ export async function getMessages(req: Request, res: Response, next: NextFunctio
     next(err as Error);
   }
 }
+
+export async function remove(req: Request, res: Response, next: NextFunction) {
+  try {
+    await conversationService.deleteConversation(req.params.id);
+    res.json({ message: 'Conversacion eliminada' });
+  } catch (err) {
+    next(err as Error);
+  }
+}
