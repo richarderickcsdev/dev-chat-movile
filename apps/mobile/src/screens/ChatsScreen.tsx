@@ -47,8 +47,11 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitle: 'Chats',
+      headerTitleAlign: 'center',
+      headerTitleStyle: { fontSize: 18, fontWeight: '600' },
       headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ marginLeft: 8 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={{ marginLeft: 12 }}>
           {user?.avatar_url ? (
             <Image
               source={{ uri: user.avatar_url.startsWith('http') ? user.avatar_url : `${BASE_URL}${user.avatar_url}` }}
