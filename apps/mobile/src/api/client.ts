@@ -5,48 +5,35 @@ export const BASE_URL = 'http://192.168.18.154:3001';
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
-const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+async function safeGet(key: string): Promise<string | null> {
+  try { return await SecureStore.getItemAsync(key); } catch { return null; }
+}
 
-const storage = {
-  async getItem(key: string): Promise<string | null> {
-    if (isWeb) return localStorage.getItem(key);
-    try {
-      return await SecureStore.getItemAsync(key);
-    } catch {
-      return null;
-    }
-  },
-  async setItem(key: string, value: string): Promise<void> {
-    if (isWeb) { localStorage.setItem(key, value); return; }
-    try {
-      await SecureStore.setItemAsync(key, value);
-    } catch {}
-  },
-  async deleteItem(key: string): Promise<void> {
-    if (isWeb) { localStorage.removeItem(key); return; }
-    try {
-      await SecureStore.deleteItemAsync(key);
-    } catch {}
-  },
-};
+async function safeSet(key: string, value: string): Promise<void> {
+  try { await SecureStore.setItemAsync(key, value); } catch {}
+}
+
+async function safeDel(key: string): Promise<void> {
+  try { await SecureStore.deleteItemAsync(key); } catch {}
+}
 
 async function loadTokens(): Promise<void> {
-  accessToken = await storage.getItem('accessToken');
-  refreshToken = await storage.getItem('refreshToken');
+  accessToken = await safeGet('accessToken');
+  refreshToken = await safeGet('refreshToken');
 }
 
 export async function saveTokens(access: string, refresh: string): Promise<void> {
   accessToken = access;
   refreshToken = refresh;
-  await storage.setItem('accessToken', access);
-  await storage.setItem('refreshToken', refresh);
+  await safeSet('accessToken', access);
+  await safeSet('refreshToken', refresh);
 }
 
 export async function clearTokens(): Promise<void> {
   accessToken = null;
   refreshToken = null;
-  await storage.deleteItem('accessToken');
-  await storage.deleteItem('refreshToken');
+  await safeDel('accessToken');
+  await safeDel('refreshToken');
 }
 
 export async function getAccessToken(): Promise<string | null> {
@@ -79,11 +66,7 @@ async function request<T>(
       const data = await renewed.json();
       await saveTokens(data.accessToken, data.refreshToken || refreshToken);
       headers['Authorization'] = `Bearer ${data.accessToken}`;
-      const retry = await fetch(`${BASE_URL}${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
+      const retry = await fetch(`${BASE_URL}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
       return retry.json();
     }
     await clearTokens();
@@ -103,15 +86,4 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   del: <T>(path: string) => request<T>('DELETE', path),
-  uploadAvatar: async (blob: Blob): Promise<{ id: string; avatar_url: string }> => {
-    const token = await getAccessToken();
-    const formData = new FormData();
-    formData.append('avatar', blob, 'avatar.jpg');
-    const res = await fetch(`${BASE_URL}/users/me/avatar`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-    return res.json();
-  },
 };
