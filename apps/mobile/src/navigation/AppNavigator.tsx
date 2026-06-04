@@ -65,7 +65,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer key={flow}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {flow === 'auth' && (
           <>
