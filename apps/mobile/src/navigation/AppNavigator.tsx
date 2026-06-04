@@ -56,7 +56,7 @@ export default function AppNavigator() {
     }
     const me = await meRes.json();
     setUser(me);
-    connectSocket().catch(() => {});
+    connectSocket(data.accessToken).catch(() => {});
 
     if (!me.name) {
       setPendingToken(data.accessToken);

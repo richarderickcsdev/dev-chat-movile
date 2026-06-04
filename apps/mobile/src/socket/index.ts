@@ -4,12 +4,18 @@ import { getAccessToken, BASE_URL } from '../api/client';
 const SOCKET_URL = BASE_URL;
 
 let socket: Socket | null = null;
+let manager: Manager | null = null;
 
-export async function connectSocket(): Promise<Socket> {
+export async function connectSocket(tokenOverride?: string): Promise<Socket> {
   if (socket?.connected) return socket;
 
-  const token = await getAccessToken();
-  const manager = new Manager(SOCKET_URL, {
+  manager?.removeAllListeners();
+  manager = null;
+  socket = null;
+
+  const token = tokenOverride || (await getAccessToken());
+
+  manager = new Manager(SOCKET_URL, {
     transports: ['websocket'],
     auth: { token },
   });
@@ -30,5 +36,7 @@ export function getSocket(): Socket {
 
 export function disconnectSocket(): void {
   socket?.disconnect();
+  manager?.removeAllListeners();
   socket = null;
+  manager = null;
 }
