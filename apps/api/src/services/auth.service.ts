@@ -1,9 +1,9 @@
-import { randomUUID } from 'crypto';
 import { redis } from '../config/redis';
 import { generateOtp } from '../lib/otp';
 import { generateToken, generateRefreshToken } from '../middlewares/auth';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
+import { findOrCreateByPhone } from './user.service';
 
 const OTP_TTL = 300;
 const REFRESH_TTL = 30 * 24 * 3600;
@@ -22,7 +22,8 @@ export async function verifyOtpAndLogin(phone: string, code: string) {
 
   await redis.del(`otp:${phone}`);
 
-  const userId = randomUUID();
+  const user = await findOrCreateByPhone(phone);
+  const userId = user.id;
   const accessToken = generateToken({ userId, phone });
   const refreshToken = generateRefreshToken();
 
