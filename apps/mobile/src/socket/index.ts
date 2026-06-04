@@ -12,9 +12,11 @@ export async function connectSocket(tokenOverride?: string): Promise<Socket> {
 
   socket = io(BASE_URL, {
     auth: { token },
-    transports: ['polling', 'websocket'],
+    transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    timeout: 20000,
   });
 
   return new Promise((resolve, reject) => {
