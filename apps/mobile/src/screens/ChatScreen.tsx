@@ -39,21 +39,27 @@ export default function ChatScreen({ route, navigation }: any) {
   }, [navigation, typingUser]);
 
   useEffect(() => {
-    loadMessages();
     const socket = getSocket();
     socket.emit('join_room', conversationId);
-    loadMessages().then(() => {
-      const unreadIds = messages
-        .filter((m) => m.senderId !== userId && (m.status === 'sent' || m.status === 'delivered'))
-        .map((m) => m._id);
-      if (unreadIds.length > 0) {
-        socket.emit('messages:read', { messageIds: unreadIds, conversationId });
+
+    loadMessages().then((loaded) => {
+      if (loaded && loaded.length > 0) {
+        const unread = loaded
+          .filter((m) => m.senderId !== userId && m.status !== 'read')
+          .map((m) => m._id);
+        if (unread.length > 0) {
+          socket.emit('messages:read', { messageIds: unread, conversationId });
+        }
       }
     });
 
     const onNewMsg = (msg: Message) => {
       setMessages((prev) => {
         if (prev.some((m) => m._id === msg._id)) return prev;
+        if (msg.senderId !== userId) {
+          socket.emit('messages:delivered', { messageIds: [msg._id], conversationId });
+          socket.emit('messages:read', { messageIds: [msg._id], conversationId });
+        }
         return [msg, ...prev];
       });
     };
@@ -96,12 +102,14 @@ export default function ChatScreen({ route, navigation }: any) {
     };
   }, [conversationId, userId]);
 
-  async function loadMessages() {
+  async function loadMessages(): Promise<Message[]> {
     try {
       const data = await api.get<{ messages: Message[] }>(`/conversations/${conversationId}/messages`);
       setMessages(data.messages);
+      return data.messages;
     } catch (err) {
       console.error(err);
+      return [];
     }
   }
 
