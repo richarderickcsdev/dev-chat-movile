@@ -42,7 +42,7 @@ export default function AppNavigator() {
     }
     const me = await meRes.json();
     setUser(me);
-    await connectSocket();
+    connectSocket().catch((err) => console.warn('Socket connection failed:', err?.message));
 
     if (!me.name) {
       setPendingTokens({ access: data.accessToken, refresh: data.refreshToken });
