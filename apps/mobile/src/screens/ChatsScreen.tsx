@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { Conversation } from '../types';
 
-export default function ChatsScreen({ navigation }: any) {
+export default function ChatsScreen({ navigation, onLogout }: any) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -41,7 +41,7 @@ export default function ChatsScreen({ navigation }: any) {
   function handleLogout() {
     Alert.alert('Cerrar sesión', '¿Estás seguro?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salir', style: 'destructive', onPress: logout },
+      { text: 'Salir', style: 'destructive', onPress: onLogout },
     ]);
   }
 

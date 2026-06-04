@@ -14,9 +14,18 @@ import ChatScreen from '../screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { isLoading, isAuthenticated, checkSession, setUser } = useAuth();
+  const { isLoading, isAuthenticated, checkSession, setUser, logout } = useAuth();
   const [screen, setScreen] = useState<'loading' | 'auth' | 'profile' | 'app'>('loading');
   const [pendingToken, setPendingToken] = useState('');
+
+  const goToLogout = useCallback(async () => {
+    await logout();
+    setScreen('auth');
+  }, [logout]);
+
+  const goToApp = useCallback(() => setScreen('app'), []);
+  const goToProfile = useCallback(() => setScreen('profile'), []);
+  const goToAuth = useCallback(() => setScreen('auth'), []);
 
   useEffect(() => {
     checkSession().then(setScreen);
@@ -24,7 +33,7 @@ export default function AppNavigator() {
 
   useEffect(() => {
     if (!isAuthenticated && screen === 'app') {
-      checkSession().then(setScreen);
+      goToLogout();
     }
   }, [isAuthenticated]);
 
@@ -51,15 +60,15 @@ export default function AppNavigator() {
 
     if (!me.name) {
       setPendingToken(data.accessToken);
-      setScreen('profile');
+      goToProfile();
     } else {
-      setScreen('app');
+      goToApp();
     }
-  }, [setUser]);
+  }, [setUser, goToProfile, goToApp]);
 
   const onProfileDone = useCallback(async () => {
-    setScreen('app');
-  }, []);
+    goToApp();
+  }, [goToApp]);
 
   if (isLoading && screen === 'loading') {
     return (
@@ -87,7 +96,9 @@ export default function AppNavigator() {
         )}
         {screen === 'app' && (
           <>
-            <Stack.Screen name="Chats" component={ChatsScreen} options={{ headerShown: true, title: 'dev-chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="Chats">
+              {(props) => <ChatsScreen {...props} onLogout={goToLogout} />}
+            </Stack.Screen>
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: 'Chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
           </>
         )}
