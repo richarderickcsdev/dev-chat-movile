@@ -6,7 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { BASE_URL } from '../api/client';
 
-export default function ProfileSetupScreen({ token, onDone }: any) {
+export default function ProfileSetupScreen({ token, onDone, onCancel }: any) {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -139,6 +139,10 @@ export default function ProfileSetupScreen({ token, onDone }: any) {
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
         <Text style={styles.skipText}>Omitir por ahora</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+        <Text style={styles.cancelText}>Cerrar sesión</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -161,4 +165,6 @@ const styles = StyleSheet.create({
   saveText: { color: '#fff', fontSize: 18, fontWeight: '600' },
   skipButton: { marginTop: 16, paddingVertical: 12 },
   skipText: { fontSize: 15, color: '#075E54', fontWeight: '500' },
+  cancelButton: { marginTop: 8, paddingVertical: 12 },
+  cancelText: { fontSize: 14, color: '#c62828', fontWeight: '500' },
 });

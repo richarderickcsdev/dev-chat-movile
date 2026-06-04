@@ -91,7 +91,7 @@ export default function AppNavigator() {
         )}
         {screen === 'profile' && (
           <Stack.Screen name="ProfileSetup">
-            {(props) => <ProfileSetupScreen {...props} token={pendingToken} onDone={onProfileDone} />}
+            {(props) => <ProfileSetupScreen {...props} token={pendingToken} onDone={onProfileDone} onCancel={goToLogout} />}
           </Stack.Screen>
         )}
         {screen === 'app' && (
