@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -8,6 +8,16 @@ export default function ChatsScreen({ navigation }: any) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const { user, logout } = useAuth();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={handleLogout} style={{ paddingHorizontal: 12 }}>
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>Salir</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     loadConversations();
@@ -65,11 +75,6 @@ export default function ChatsScreen({ navigation }: any) {
           </View>
         }
       />
-      {user && (
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Cerrar sesión: {user.name || user.phone}</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -85,6 +90,4 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', marginTop: 80 },
   emptyText: { fontSize: 18, fontWeight: '600', color: '#999' },
   emptySubtext: { fontSize: 14, color: '#bbb', marginTop: 8 },
-  logoutBtn: { padding: 16, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' },
-  logoutText: { fontSize: 14, color: '#c62828', fontWeight: '500' },
 });

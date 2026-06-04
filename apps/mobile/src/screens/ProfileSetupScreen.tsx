@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   Image, StyleSheet, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { BASE_URL } from '../api/client';
 
 export default function ProfileSetupScreen({ token, onDone }: any) {
@@ -18,7 +19,7 @@ export default function ProfileSetupScreen({ token, onDone }: any) {
     }
     setSaving(true);
     try {
-      await fetch(`${BASE_URL}/users/me`, {
+      const res = await fetch(`${BASE_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -26,24 +27,32 @@ export default function ProfileSetupScreen({ token, onDone }: any) {
         },
         body: JSON.stringify({ name: name.trim(), bio: bio.trim() || '' }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Error al guardar perfil' }));
+        throw new Error(err.error);
+      }
 
       if (avatarUri) {
         const formData = new FormData();
-        formData.append('avatar', {
-          uri: avatarUri,
-          type: 'image/jpeg',
-          name: 'avatar.jpg',
-        } as any);
-        await fetch(`${BASE_URL}/users/me/avatar`, {
+        const filename = avatarUri.split('/').pop() || 'avatar.jpg';
+        const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+        formData.append('avatar', { uri: avatarUri, type: mimeType, name: filename } as any);
+
+        const uploadRes = await fetch(`${BASE_URL}/users/me/avatar`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => ({ error: 'Error al subir avatar' }));
+          throw new Error(err.error);
+        }
       }
 
       await onDone();
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', err.message || 'Ocurrió un error');
     } finally {
       setSaving(false);
     }
@@ -55,14 +64,13 @@ export default function ProfileSetupScreen({ token, onDone }: any) {
 
   async function pickImage() {
     try {
-      const { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } = require('expo-image-picker');
-      const { status } = await requestMediaLibraryPermissionsAsync();
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería');
         return;
       }
-      const result = await launchImageLibraryAsync({
-        mediaTypes: MediaTypeOptions.Images,
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
