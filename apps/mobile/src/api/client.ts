@@ -1,35 +1,32 @@
-import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = Platform.OS === 'web'
-  ? 'http://localhost:3001'
-  : 'http://192.168.18.154:3001';
+export const BASE_URL = 'http://192.168.18.154:3001';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 const storage = {
   async getItem(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
+    if (isWeb) return localStorage.getItem(key);
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
     }
-    const SecureStore = require('expo-secure-store');
-    return SecureStore.getItemAsync(key);
   },
   async setItem(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
-      return;
-    }
-    const SecureStore = require('expo-secure-store');
-    return SecureStore.setItemAsync(key, value);
+    if (isWeb) { localStorage.setItem(key, value); return; }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {}
   },
   async deleteItem(key: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
-      return;
-    }
-    const SecureStore = require('expo-secure-store');
-    return SecureStore.deleteItemAsync(key);
+    if (isWeb) { localStorage.removeItem(key); return; }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {}
   },
 };
 
