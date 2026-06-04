@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal, BackHandler, AppState } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api, BASE_URL, getAccessToken } from '../api/client';
 import { getSocket } from '../socket';
 import { Message } from '../types';
-import * as Notifications from '../notifications';
 
 const TYPING_DEBOUNCE = 2000;
 
@@ -27,19 +26,8 @@ export default function ChatScreen({ route, navigation }: any) {
   const [editMode, setEditMode] = useState<{ id: string; content: string } | null>(null);
   const [typingUser, setTypingUser] = useState('');
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
-  const appStateRef = useRef(AppState.currentState);
-  const unreadRef = useRef(0);
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (nextState) => {
-      appStateRef.current = nextState;
-      if (nextState === 'active') {
-        unreadRef.current = 0;
-        Notifications.setBadgeCount(0);
-      }
-    });
-    return () => sub.remove();
-  }, []);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -84,11 +72,6 @@ export default function ChatScreen({ route, navigation }: any) {
         if (prev.some((m) => m._id === msg._id)) return prev;
         return [msg, ...prev];
       });
-      if (msg.senderId !== userId && appStateRef.current !== 'active') {
-        unreadRef.current += 1;
-        const name = msg.content || 'Nuevo mensaje';
-        Notifications.showMessageNotification(conversationId, 'Nuevo mensaje', name.slice(0, 100), unreadRef.current);
-      }
       if (msg.senderId !== userId) {
         socket.emit('messages:delivered', { messageIds: [msg._id], conversationId });
         socket.emit('messages:read', { messageIds: [msg._id], conversationId });

@@ -43,6 +43,8 @@ export interface Conversation {
     content: string;
     senderId: string;
     createdAt: string;
+    status?: string;
+    type?: string;
   };
   online: boolean;
   createdAt: string;

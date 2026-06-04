@@ -2,9 +2,20 @@ import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react'
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Alert, Animated } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { api, BASE_URL } from '../api/client';
+import { getSocket } from '../socket';
 import { Conversation } from '../types';
 
 const ITEM_HEIGHT = 72;
+
+function statusIcon(status?: string): string {
+  switch (status) {
+    case 'sending': return '◷';
+    case 'sent': return '✓';
+    case 'delivered': return '✓✓';
+    case 'read': return '✓✓';
+    default: return '';
+  }
+}
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -45,6 +56,19 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
 
   useEffect(() => {
     loadConversations();
+    let socket: any = null;
+    try { socket = getSocket(); } catch {}
+    if (socket) {
+      const refresh = () => loadConversations();
+      socket.on('message:new', refresh);
+      socket.on('conversation:new', refresh);
+      socket.on('messages:status', refresh);
+      return () => {
+        socket.off('message:new', refresh);
+        socket.off('conversation:new', refresh);
+        socket.off('messages:status', refresh);
+      };
+    }
   }, []);
 
   async function loadConversations() {
@@ -123,7 +147,13 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
           <View style={styles.bottomRow}>
             {item.lastMessage ? (
               <Text style={styles.lastMsg} numberOfLines={1}>
-                {isMine && 'Tú: '}{item.lastMessage.content}
+                {isMine && 'Tú: '}
+                {item.lastMessage.type === 'image' ? '📷 Imagen' : item.lastMessage.content}
+                {isMine && item.lastMessage.status && (
+                  <Text style={{ color: item.lastMessage.status === 'read' ? '#53bdeb' : '#8696a0', fontSize: 12 }}>
+                    {' '}{statusIcon(item.lastMessage.status)}
+                  </Text>
+                )}
               </Text>
             ) : (
               <Text style={styles.noMsg}>Sin mensajes</Text>

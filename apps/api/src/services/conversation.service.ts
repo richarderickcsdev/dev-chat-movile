@@ -39,6 +39,24 @@ export async function listConversations(userId: string) {
 
       const online = partnerId ? (await redis.get(`io:online:${partnerId}`)) !== null : false;
 
+      let lastMsg = conv.lastMessage ? { ...conv.lastMessage } : null;
+
+      if (conv.lastMessage?.content) {
+        const msg = await Message.findOne(
+          { conversationId: conv._id.toString() },
+          { status: 1, type: 1 },
+        ).sort({ createdAt: -1 }).lean();
+        if (msg) {
+          lastMsg = {
+            content: conv.lastMessage.content,
+            senderId: conv.lastMessage.senderId,
+            createdAt: conv.lastMessage.createdAt,
+            status: (msg as any).status || 'sent',
+            type: (msg as any).type || 'text',
+          };
+        }
+      }
+
       return {
         _id: conv._id.toString(),
         participants: conv.participants,
@@ -47,7 +65,7 @@ export async function listConversations(userId: string) {
           name: partner.name || partnerId,
           avatar_url: partner.avatar_url,
         } : null,
-        lastMessage: conv.lastMessage || null,
+        lastMessage: lastMsg,
         online,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
