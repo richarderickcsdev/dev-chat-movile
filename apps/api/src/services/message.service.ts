@@ -10,6 +10,17 @@ export interface SendMessageInput {
   tempId: string;
 }
 
+export async function deleteMessage(messageId: string, userId: string): Promise<IMessage | null> {
+  const message = await Message.findOneAndDelete({
+    _id: messageId,
+    senderId: userId,
+  });
+  if (!message) return null;
+
+  logger.info({ messageId, userId }, 'Mensaje eliminado');
+  return message;
+}
+
 export async function createMessage(senderId: string, input: SendMessageInput): Promise<IMessage> {
   const message = await Message.create({
     conversationId: input.conversationId,

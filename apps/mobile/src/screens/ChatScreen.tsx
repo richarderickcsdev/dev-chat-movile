@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -51,6 +51,24 @@ export default function ChatScreen({ route }: any) {
     setText('');
   }
 
+  function handleDeleteMessage(msg: Message) {
+    if (msg.senderId !== userId) return;
+    Alert.alert('Eliminar mensaje', '¿Quieres eliminar este mensaje?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.del(`/conversations/${conversationId}/messages/${msg._id}`);
+            setMessages((prev) => prev.filter((m) => m._id !== msg._id));
+          } catch (err) {
+            console.error(err);
+          }
+        },
+      },
+    ]);
+  }
+
   const userId = user?.id || '';
 
   return (
@@ -67,9 +85,14 @@ export default function ChatScreen({ route }: any) {
           inverted
           contentContainerStyle={{ paddingBottom: 8 }}
           renderItem={({ item }) => (
-            <View style={[styles.bubble, item.senderId === userId ? styles.mine : styles.other]}>
-              <Text style={styles.msgText}>{item.content}</Text>
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onLongPress={() => handleDeleteMessage(item)}
+            >
+              <View style={[styles.bubble, item.senderId === userId ? styles.mine : styles.other]}>
+                <Text style={styles.msgText}>{item.content}</Text>
+              </View>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={
             <View style={styles.emptyChat}>

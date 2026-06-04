@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import * as conversationService from '../services/conversation.service';
+import * as messageService from '../services/message.service';
 import { getIO } from '../socket';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -59,6 +60,19 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await conversationService.deleteConversation(req.params.id);
     res.json({ message: 'Conversacion eliminada' });
+  } catch (err) {
+    next(err as Error);
+  }
+}
+
+export async function deleteMessage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const msg = await messageService.deleteMessage(
+      req.params.messageId,
+      req.user!.userId,
+    );
+    if (!msg) return next(new AppError(404, 'Mensaje no encontrado o no autorizado'));
+    res.json({ message: 'Mensaje eliminado', _id: req.params.messageId });
   } catch (err) {
     next(err as Error);
   }
