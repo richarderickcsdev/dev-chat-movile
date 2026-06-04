@@ -1,31 +1,26 @@
-import { Manager, Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { getAccessToken, BASE_URL } from '../api/client';
 
-const SOCKET_URL = BASE_URL;
-
 let socket: Socket | null = null;
-let manager: Manager | null = null;
 
 export async function connectSocket(tokenOverride?: string): Promise<Socket> {
   if (socket?.connected) return socket;
 
-  manager?.removeAllListeners();
-  manager = null;
-  socket = null;
+  disconnectSocket();
 
   const token = tokenOverride || (await getAccessToken());
 
-  manager = new Manager(SOCKET_URL, {
-    transports: ['websocket'],
+  socket = io(BASE_URL, {
     auth: { token },
+    transports: ['polling', 'websocket'],
+    reconnection: true,
+    reconnectionAttempts: 5,
   });
-
-  socket = manager.socket('/');
 
   return new Promise((resolve, reject) => {
     socket!.on('connect', () => resolve(socket!));
     socket!.on('connect_error', (err) => reject(err));
-    setTimeout(() => reject(new Error('Timeout de conexion')), 10000);
+    setTimeout(() => reject(new Error('Timeout de conexion')), 15000);
   });
 }
 
@@ -36,7 +31,6 @@ export function getSocket(): Socket {
 
 export function disconnectSocket(): void {
   socket?.disconnect();
-  manager?.removeAllListeners();
+  socket?.removeAllListeners();
   socket = null;
-  manager = null;
 }
