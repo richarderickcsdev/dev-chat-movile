@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAccessToken, saveTokens, clearTokens } from '../api/client';
+import { getAccessToken, saveTokens, clearTokens, BASE_URL } from '../api/client';
 import { verifyOtp as apiVerifyOtp } from '../api/auth';
 import { User } from '../types';
 import { connectSocket, disconnectSocket } from '../socket';
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = await getAccessToken();
       if (token) {
-        const res = await fetch('http://192.168.1.100:3001/users/me', {
+        const res = await fetch(`${BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function sendOtp(phone: string) {
-    const res = await fetch('http://192.168.1.100:3001/auth/send-otp', {
+    const res = await fetch(`${BASE_URL}/auth/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone }),
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function verifyOtp(phone: string, code: string) {
     const data = await apiVerifyOtp(phone, code);
-    const me = await fetch('http://192.168.1.100:3001/users/me', {
+    const me = await fetch(`${BASE_URL}/users/me`, {
       headers: { Authorization: `Bearer ${data.accessToken}` },
     });
     const userData = await me.json();

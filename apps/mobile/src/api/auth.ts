@@ -1,7 +1,7 @@
-import { saveTokens } from './client';
+import { saveTokens, BASE_URL } from './client';
 
 export async function sendOtp(phone: string): Promise<void> {
-  await fetch('http://192.168.1.100:3001/auth/send-otp', {
+  await fetch(`${BASE_URL}/auth/send-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
@@ -12,7 +12,7 @@ export async function verifyOtp(
   phone: string,
   code: string,
 ): Promise<{ userId: string; accessToken: string; refreshToken: string }> {
-  const res = await fetch('http://192.168.1.100:3001/auth/verify-otp', {
+  const res = await fetch(`${BASE_URL}/auth/verify-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone, code }),

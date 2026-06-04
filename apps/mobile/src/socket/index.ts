@@ -1,7 +1,7 @@
 import { Manager, Socket } from 'socket.io-client';
-import { getAccessToken } from '../api/client';
+import { getAccessToken, BASE_URL } from '../api/client';
 
-const SOCKET_URL = 'http://192.168.1.100:3001';
+const SOCKET_URL = BASE_URL;
 
 let socket: Socket | null = null;
 

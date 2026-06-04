@@ -110,6 +110,10 @@ dev-chat-movile/
 - **REST Client:** Abrir `apps/api/api.http` en VS Code con la extension `humao.rest-client`
 - **Socket.IO:** Cliente conecta a `http://localhost:3001` con `{ auth: { token } }`
 
+## Mobile App (Expo)
+- `cd apps/mobile && npx expo start` — escanear QR con Expo Go
+- `BASE_URL` configurado en `src/api/client.ts` (IP local del PC)
+
 ## Conexiones Externas (MCP)
 - **Notion:** Documentación del proyecto en Notion (página "Proyecto Chat Movile")
 - **Linear:** Issues y seguimiento de tareas (RIC-13 a RIC-40)
