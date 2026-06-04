@@ -6,7 +6,7 @@ const router = Router();
 
 const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
+  max: 10,
   message: { error: 'Demasiados intentos, espera 1 hora' },
   standardHeaders: true,
   legacyHeaders: false,

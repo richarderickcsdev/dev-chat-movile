@@ -30,9 +30,6 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
     const arr = digits.split('').slice(0, 6);
     while (arr.length < 6) arr.push('');
     setCodes(arr);
-    if (digits.length >= 6) {
-      handleVerify(digits.slice(0, 6));
-    }
   }
 
   function focusInput() {
