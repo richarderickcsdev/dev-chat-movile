@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
+import { navigationRef } from './navRef';
 import { useAuth } from '../context/AuthContext';
 import { saveTokens, BASE_URL } from '../api/client';
 import { connectSocket } from '../socket';
@@ -79,7 +80,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {screen === 'auth' && (
           <>

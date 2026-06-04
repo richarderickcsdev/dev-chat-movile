@@ -29,6 +29,13 @@
           "photosPermission": "La app necesita acceder a tus fotos para tu avatar de perfil",
           "cameraPermission": "La app necesita acceder a la cámara para tu avatar"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#075E54"
+        }
       ]
     ]
   }

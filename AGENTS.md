@@ -88,7 +88,7 @@ dev-chat-movile/
 | RIC-30 Lista de conversaciones | ✅ Done |
 | RIC-31 ChatScreen | ✅ Done |
 | RIC-32 Envío de imágenes | ✅ Done |
-| RIC-33 Notificaciones locales (sin Firebase) | 📋 Todo |
+| RIC-33 Notificaciones locales (sin Firebase) | ✅ Done |
 
 ### Fase 5 (Backlog)
 | Issue | |
