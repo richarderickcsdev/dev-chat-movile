@@ -63,23 +63,30 @@ export default function ProfileSetupScreen({ token, onDone }: any) {
   }
 
   async function pickImage() {
+    let status = null;
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería');
-        return;
-      }
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      status = perm.status;
+    } catch {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería');
+      return;
+    }
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería');
+      return;
+    }
+    try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
       });
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         setAvatarUri(result.assets[0].uri);
       }
-    } catch {
-      Alert.alert('Error', 'No se pudo abrir la galería');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'No se pudo abrir la galería');
     }
   }
 
