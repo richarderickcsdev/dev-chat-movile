@@ -39,11 +39,15 @@ export function handleIncomingMessage(msg: any) {
       }).catch(() => {});
     }
 
-    Notifications.presentNotificationAsync({
-      title: 'Nuevo mensaje',
-      body: preview,
-      data: { conversationId: msg.conversationId },
-      badge: unreadCount,
+    Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Nuevo mensaje',
+        body: preview,
+        data: { conversationId: msg.conversationId },
+        badge: unreadCount,
+        sound: true,
+      },
+      trigger: null,
     }).catch(() => {});
   } catch {}
 }
