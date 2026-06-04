@@ -5,28 +5,35 @@ import * as Notifications from '../notifications';
 
 export function useNotificationListener() {
   const appStateRef = useRef(AppState.currentState);
+  const unreadRef = useRef(0);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
       appStateRef.current = nextState;
+      if (nextState === 'active') {
+        unreadRef.current = 0;
+        Notifications.setBadgeCount(0);
+      }
     });
     return () => sub.remove();
   }, []);
 
   useEffect(() => {
-    let unread = 0;
-    let socket: any = null;
-    try { socket = getSocket(); } catch { return; }
-
-    const handler = (msg: any) => {
-      if (appStateRef.current !== 'active') {
-        unread += 1;
-        const preview = msg.type === 'image' ? '📷 Imagen' : (msg.content || '').slice(0, 100);
-        Notifications.showMessageNotification(msg.conversationId, 'Nuevo mensaje', preview, unread);
+    const interval = setInterval(() => {
+      let socket: any;
+      try { socket = getSocket(); } catch { return; }
+      if (socket?.connected) {
+        clearInterval(interval);
+        socket.off('message:new');
+        socket.on('message:new', (msg: any) => {
+          if (appStateRef.current !== 'active') {
+            unreadRef.current += 1;
+            const preview = msg.type === 'image' ? '📷 Imagen' : (msg.content || '').slice(0, 100);
+            Notifications.showMessageNotification(msg.conversationId, 'Nuevo mensaje', preview, unreadRef.current);
+          }
+        });
       }
-    };
-
-    socket.on('message:new', handler);
-    return () => { socket.off('message:new', handler); };
+    }, 500);
+    return () => clearInterval(interval);
   }, []);
 }
