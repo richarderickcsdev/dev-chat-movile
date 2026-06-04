@@ -48,7 +48,8 @@ dev-chat-movile/
 - Fase 1 ✅ — Entorno Local (Docker, .env, estructura, MCP)
 - Fase 2 ✅ — Backend Auth & Usuarios (Express, DBs, Auth OTP, Perfiles, Contactos)
 - Fase 3 ✅ — Mensajería Real-time (Socket.io, Mensajes, Estados, Conversaciones, Grupos, Typing)
-- Fase 4 — App React Native (SIGUIENTE)
+- Fase 4 ✅ — App React Native (Expo, Login, Chats, ChatScreen, Socket client, API client)
+- Fase 5 — QA & Seguridad (SIGUIENTE)
 
 ## Issues en Linear
 
@@ -79,15 +80,15 @@ dev-chat-movile/
 | RIC-26 Grupos básicos | ✅ Done |
 | RIC-27 Typing indicators + Online status | ✅ Done |
 
-### Fase 4 (Backlog)
-| Issue | |
+### Fase 4 (En progreso)
+| Issue | Estado |
 |---|---|
-| RIC-28 Setup proyecto Expo + Navegación | 📋 |
-| RIC-29 Flujo de autenticación en mobile | 📋 |
-| RIC-30 Lista de conversaciones | 📋 |
-| RIC-31 ChatScreen | 📋 |
-| RIC-32 Envío de imágenes | 📋 |
-| RIC-33 Notificaciones locales (sin Firebase) | 📋 |
+| RIC-28 Setup proyecto Expo + Navegación | ✅ Done |
+| RIC-29 Flujo de autenticación en mobile | 📋 Todo |
+| RIC-30 Lista de conversaciones | 📋 Todo |
+| RIC-31 ChatScreen | 📋 Todo |
+| RIC-32 Envío de imágenes | 📋 Todo |
+| RIC-33 Notificaciones locales (sin Firebase) | 📋 Todo |
 
 ### Fase 5 (Backlog)
 | Issue | |
