@@ -86,7 +86,7 @@ dev-chat-movile/
 | RIC-28 Setup proyecto Expo + Navegación | ✅ Done |
 | RIC-29 Flujo de autenticación en mobile | 🟡 In Progress |
 | RIC-30 Lista de conversaciones | ✅ Done |
-| RIC-31 ChatScreen | 🟡 In Progress |
+| RIC-31 ChatScreen | ✅ Done |
 | RIC-32 Envío de imágenes | 📋 Todo |
 | RIC-33 Notificaciones locales (sin Firebase) | 📋 Todo |
 
