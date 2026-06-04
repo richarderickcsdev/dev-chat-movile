@@ -1,27 +1,55 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-export const BASE_URL = 'http://192.168.18.154:3001';
+export const BASE_URL = Platform.OS === 'web'
+  ? 'http://localhost:3001'
+  : 'http://192.168.18.154:3001';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+const storage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key);
+    }
+    const SecureStore = require('expo-secure-store');
+    return SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value);
+      return;
+    }
+    const SecureStore = require('expo-secure-store');
+    return SecureStore.setItemAsync(key, value);
+  },
+  async deleteItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key);
+      return;
+    }
+    const SecureStore = require('expo-secure-store');
+    return SecureStore.deleteItemAsync(key);
+  },
+};
+
 async function loadTokens(): Promise<void> {
-  accessToken = await SecureStore.getItemAsync('accessToken');
-  refreshToken = await SecureStore.getItemAsync('refreshToken');
+  accessToken = await storage.getItem('accessToken');
+  refreshToken = await storage.getItem('refreshToken');
 }
 
 export async function saveTokens(access: string, refresh: string): Promise<void> {
   accessToken = access;
   refreshToken = refresh;
-  await SecureStore.setItemAsync('accessToken', access);
-  await SecureStore.setItemAsync('refreshToken', refresh);
+  await storage.setItem('accessToken', access);
+  await storage.setItem('refreshToken', refresh);
 }
 
 export async function clearTokens(): Promise<void> {
   accessToken = null;
   refreshToken = null;
-  await SecureStore.deleteItemAsync('accessToken');
-  await SecureStore.deleteItemAsync('refreshToken');
+  await storage.deleteItem('accessToken');
+  await storage.deleteItem('refreshToken');
 }
 
 export async function getAccessToken(): Promise<string | null> {
