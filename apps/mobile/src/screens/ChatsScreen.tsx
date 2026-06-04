@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Alert, Animated } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { api, BASE_URL } from '../api/client';
 import { getSocket } from '../socket';
@@ -54,8 +55,13 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
     });
   }, [navigation]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadConversations();
+    }, []),
+  );
+
   useEffect(() => {
-    loadConversations();
     let socket: any = null;
     try { socket = getSocket(); } catch {}
     if (socket) {
