@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken, BASE_URL } from '../api/client';
+import { handleIncomingMessage } from '../notifications/handler';
 
 let socket: Socket | null = null;
 
@@ -19,9 +20,15 @@ export async function connectSocket(tokenOverride?: string): Promise<Socket> {
     timeout: 20000,
   });
 
+  socket.on('connect', () => {
+    socket!.off('message:new').on('message:new', (msg: any) => {
+      handleIncomingMessage(msg);
+    });
+  });
+
   return new Promise((resolve, reject) => {
-    socket!.on('connect', () => resolve(socket!));
-    socket!.on('connect_error', (err) => reject(err));
+    socket!.once('connect', () => resolve(socket!));
+    socket!.once('connect_error', (err) => reject(err));
     setTimeout(() => reject(new Error('Timeout de conexion')), 15000);
   });
 }

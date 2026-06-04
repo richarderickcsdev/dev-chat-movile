@@ -6,7 +6,6 @@ import { navigationRef } from './navRef';
 import { useAuth } from '../context/AuthContext';
 import { saveTokens, BASE_URL } from '../api/client';
 import { connectSocket } from '../socket';
-import { useNotificationListener } from '../notifications/useNotificationListener';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import OTPScreen from '../screens/OTPScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
@@ -19,8 +18,6 @@ export default function AppNavigator() {
   const { isLoading, isAuthenticated, checkSession, setUser, logout } = useAuth();
   const [screen, setScreen] = useState<'loading' | 'auth' | 'profile' | 'app'>('loading');
   const [pendingToken, setPendingToken] = useState('');
-
-  useNotificationListener();
 
   const goToLogout = useCallback(async () => {
     await logout();
