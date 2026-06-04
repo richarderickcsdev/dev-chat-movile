@@ -92,6 +92,19 @@ export async function updateLastMessage(
   });
 }
 
+export async function clearLastMessage(conversationId: string): Promise<void> {
+  await Conversation.findByIdAndUpdate(conversationId, {
+    $unset: { lastMessage: '' },
+  });
+}
+
+export async function findLastMessage(conversationId: string) {
+  const message = await Message.findOne({ conversationId })
+    .sort({ createdAt: -1 })
+    .lean();
+  return message;
+}
+
 export async function deleteConversation(conversationId: string): Promise<void> {
   await Conversation.findByIdAndDelete(conversationId);
   await Message.deleteMany({ conversationId });

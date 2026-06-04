@@ -72,6 +72,21 @@ export async function deleteMessage(req: Request, res: Response, next: NextFunct
       req.user!.userId,
     );
     if (!msg) return next(new AppError(404, 'Mensaje no encontrado o no autorizado'));
+
+    const conversation = await conversationService.getConversationById(req.params.conversationId);
+    if (conversation?.lastMessage?.senderId === req.user!.userId) {
+      const lastMsg = await conversationService.findLastMessage(req.params.conversationId);
+      if (lastMsg) {
+        await conversationService.updateLastMessage(req.params.conversationId, {
+          content: lastMsg.content.slice(0, 200),
+          senderId: (lastMsg as any).senderId,
+          createdAt: new Date((lastMsg as any).createdAt),
+        });
+      } else {
+        await conversationService.clearLastMessage(req.params.conversationId);
+      }
+    }
+
     res.json({ message: 'Mensaje eliminado', _id: req.params.messageId });
   } catch (err) {
     next(err as Error);
@@ -88,6 +103,16 @@ export async function editMessage(req: Request, res: Response, next: NextFunctio
       content,
     );
     if (!msg) return next(new AppError(404, 'Mensaje no encontrado o no autorizado'));
+
+    const conversation = await conversationService.getConversationById(req.params.conversationId);
+    if (conversation?.lastMessage?.senderId === req.user!.userId) {
+      await conversationService.updateLastMessage(req.params.conversationId, {
+        content: content.slice(0, 200),
+        senderId: req.user!.userId,
+        createdAt: msg.createdAt,
+      });
+    }
+
     res.json({ _id: msg._id.toString(), content: msg.content });
   } catch (err) {
     if (err instanceof z.ZodError) {

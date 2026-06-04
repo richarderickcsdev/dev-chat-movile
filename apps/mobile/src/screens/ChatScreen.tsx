@@ -207,14 +207,14 @@ export default function ChatScreen({ route, navigation }: any) {
             return (
               <TouchableOpacity activeOpacity={0.8} onLongPress={() => handleLongPress(item)}>
                 <View style={[styles.bubble, isMine ? styles.mine : styles.other]}>
-                  <Text style={styles.msgText}>{item.content}</Text>
-                  {isMine && (
-                    <View style={styles.statusRow}>
+                  <View style={styles.msgRow}>
+                    <Text style={styles.msgText}>{item.content}</Text>
+                    {isMine && (
                       <Text style={[styles.statusIcon, item.status === 'read' && styles.statusRead]}>
-                        {statusIcon(item.status)}
+                        {' '}{statusIcon(item.status)}
                       </Text>
-                    </View>
-                  )}
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -256,9 +256,9 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '78%', padding: 8, paddingHorizontal: 10, borderRadius: 8, marginVertical: 2, marginHorizontal: 10 },
   mine: { backgroundColor: '#dcf8c6', alignSelf: 'flex-end', borderTopRightRadius: 2 },
   other: { backgroundColor: '#fff', alignSelf: 'flex-start', borderTopLeftRadius: 2 },
-  msgText: { fontSize: 16, color: '#1a1a1a' },
-  statusRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2 },
-  statusIcon: { fontSize: 13, color: '#8696a0', marginLeft: 2 },
+  msgText: { fontSize: 16, color: '#1a1a1a', flexShrink: 1 },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  statusIcon: { fontSize: 12, color: '#8696a0', marginLeft: 4 },
   statusRead: { color: '#53bdeb' },
   typingText: { fontSize: 13, color: '#075E54', fontStyle: 'italic', paddingHorizontal: 16, paddingVertical: 4 },
   emptyChat: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
