@@ -45,6 +45,32 @@ export default function ChatScreen({ route, navigation }: any) {
   const userId = user?.id || '';
 
   useLayoutEffect(() => {
+    const { partnerName, partnerAvatar } = route.params;
+    navigation.setOptions({
+      title: partnerName || 'Chat',
+      headerLeft: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+            <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
+          </TouchableOpacity>
+          {partnerAvatar ? (
+            <Image source={{ uri: partnerAvatar.startsWith('http') ? partnerAvatar : `${BASE_URL}${partnerAvatar}` }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }} />
+          ) : (
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>{(partnerName || '?')[0].toUpperCase()}</Text>
+            </View>
+          )}
+          <View>
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{partnerName || 'Chat'}</Text>
+            {typingUser ? <Text style={{ color: '#a5d6a7', fontSize: 12 }}>escribiendo...</Text> : null}
+          </View>
+        </View>
+      ),
+      headerTitle: '',
+    });
+  }, [navigation, route.params, typingUser]);
+
+  useLayoutEffect(() => {
     navigation.setOptions({
       title: typingUser ? 'escribiendo...' : 'Chat',
     });

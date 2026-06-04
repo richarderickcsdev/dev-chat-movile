@@ -131,7 +131,11 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
       <TouchableOpacity
         style={styles.item}
         activeOpacity={0.6}
-        onPress={() => navigation.navigate('Chat', { conversationId: item._id })}
+        onPress={() => navigation.navigate('Chat', {
+          conversationId: item._id,
+          partnerName: item.partner?.name || 'Chat',
+          partnerAvatar: item.partner?.avatar_url || null,
+        })}
         onLongPress={() => handleDelete(item._id, name)}
       >
         <View style={styles.avatarContainer}>

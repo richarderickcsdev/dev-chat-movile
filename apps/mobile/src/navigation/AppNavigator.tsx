@@ -100,7 +100,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Chats" options={{ headerShown: true, title: 'dev-chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }}>
               {(props) => <ChatsScreen {...props} onLogout={goToLogout} />}
             </Stack.Screen>
-            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: 'Chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff', headerTitle: '' }} />
           </>
         )}
       </Stack.Navigator>
