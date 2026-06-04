@@ -1,29 +1,36 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { getSocket } from '../socket';
 import { Message } from '../types';
 
 export default function ChatScreen({ route }: any) {
   const { conversationId } = route.params;
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const flatRef = useRef<FlatList>(null);
+  const onNewMessage = useRef<((msg: Message) => void) | null>(null);
 
   useEffect(() => {
     loadMessages();
     const socket = getSocket();
     socket.emit('join_room', conversationId);
 
-    socket.on('message:new', (msg: Message) => {
+    const handler = (msg: Message) => {
       setMessages((prev) => [msg, ...prev]);
-    });
+    };
+    onNewMessage.current = handler;
+    socket.on('message:new', handler);
 
     return () => {
       socket.emit('leave_room', conversationId);
-      socket.off('message:new');
+      if (onNewMessage.current) {
+        socket.off('message:new', onNewMessage.current);
+      }
     };
-  }, []);
+  }, [conversationId]);
 
   async function loadMessages() {
     try {
@@ -34,13 +41,15 @@ export default function ChatScreen({ route }: any) {
     }
   }
 
-  async function sendMessage() {
+  function sendMessage() {
     if (!text.trim()) return;
     const tempId = Date.now().toString();
     const socket = getSocket();
     socket.emit('message:send', { tempId, conversationId, content: text.trim() });
     setText('');
   }
+
+  const userId = user?.id || '';
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -50,7 +59,7 @@ export default function ChatScreen({ route }: any) {
         keyExtractor={(m) => m._id}
         inverted
         renderItem={({ item }) => (
-          <View style={[styles.bubble, item.senderId === 'me' ? styles.mine : styles.other]}>
+          <View style={[styles.bubble, item.senderId === userId ? styles.mine : styles.other]}>
             <Text style={styles.msgText}>{item.content}</Text>
           </View>
         )}
