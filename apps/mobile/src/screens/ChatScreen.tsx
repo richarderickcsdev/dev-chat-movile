@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api, BASE_URL, getAccessToken } from '../api/client';
@@ -26,6 +26,17 @@ export default function ChatScreen({ route, navigation }: any) {
   const [editMode, setEditMode] = useState<{ id: string; content: string } | null>(null);
   const [typingUser, setTypingUser] = useState('');
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (fullscreenUri) {
+        setFullscreenUri(null);
+        return true;
+      }
+      return false;
+    });
+    return () => backHandler.remove();
+  }, [fullscreenUri]);
   const flatRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -253,7 +264,16 @@ export default function ChatScreen({ route, navigation }: any) {
               <TouchableOpacity activeOpacity={0.8} onLongPress={() => handleLongPress(item)} onPress={isImage ? () => setFullscreenUri(imgSrc) : undefined}>
                 <View style={[styles.bubble, isImage && styles.bubbleImage, isMine ? styles.mine : styles.other]}>
                   {isImage ? (
-                    <Image source={{ uri: imgSrc }} style={styles.imageMsg} resizeMode="cover" />
+                    <View>
+                      <Image source={{ uri: imgSrc }} style={styles.imageMsg} resizeMode="cover" />
+                      {isMine && (
+                        <View style={styles.imageStatusRow}>
+                          <Text style={[styles.statusIcon, item.status === 'read' && styles.statusRead]}>
+                            {statusIcon(item.status)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   ) : (
                     <View style={styles.msgRow}>
                       <Text style={styles.msgText}>{item.content}</Text>
@@ -330,6 +350,7 @@ const styles = StyleSheet.create({
   sendText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   bubbleImage: { padding: 3, maxWidth: '70%' },
   imageMsg: { width: 200, height: 200, borderRadius: 6 },
+  imageStatusRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 3, paddingRight: 2 },
   fullscreenBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   fullscreenImage: { width: '100%', height: '80%' },
 });
