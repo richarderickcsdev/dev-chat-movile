@@ -43,7 +43,7 @@ export function registerMessageHandlers(socket: Socket): void {
         status: 'sent',
       });
 
-      socket.to(input.conversationId).emit('message:new', {
+      io.to(input.conversationId).emit('message:new', {
         _id: message._id.toString(),
         conversationId: input.conversationId,
         senderId: auth.userId,
