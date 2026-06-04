@@ -147,7 +147,7 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
     const imageUrl = `/uploads/${outputFilename}`;
 
     const message = await messageService.createMessage(req.user!.userId, {
-      conversationId: req.params.conversationId,
+      conversationId: req.params.id,
       content: 'Imagen',
       tempId: `img_${Date.now()}`,
     });
@@ -158,16 +158,16 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
       { new: true },
     );
 
-    await conversationService.updateLastMessage(req.params.conversationId, {
+    await conversationService.updateLastMessage(req.params.id, {
       content: 'Imagen',
       senderId: req.user!.userId,
       createdAt: message.createdAt,
     });
 
     const io = getIO();
-    io.to(req.params.conversationId).emit('message:new', {
+    io.to(req.params.id).emit('message:new', {
       _id: message._id.toString(),
-      conversationId: req.params.conversationId,
+      conversationId: req.params.id,
       senderId: req.user!.userId,
       content: 'Imagen',
       type: 'image',
