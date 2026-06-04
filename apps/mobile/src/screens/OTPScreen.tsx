@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { BASE_URL } from '../api/client';
 
 const RESEND_DELAY = 60;
 
@@ -76,7 +77,7 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
   async function handleResend() {
     if (!canResend || loading) return;
     try {
-      const res = await fetch('http://192.168.18.154:3001/auth/send-otp', {
+      const res = await fetch(`${BASE_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),

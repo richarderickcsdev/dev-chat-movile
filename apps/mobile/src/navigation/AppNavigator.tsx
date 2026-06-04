@@ -36,6 +36,10 @@ export default function AppNavigator() {
     const meRes = await fetch(`${BASE_URL}/users/me`, {
       headers: { Authorization: `Bearer ${data.accessToken}` },
     });
+    if (!meRes.ok) {
+      const errBody = await meRes.json().catch(() => ({}));
+      throw new Error(errBody.error || 'Error al obtener perfil');
+    }
     const me = await meRes.json();
     setUser(me);
     await connectSocket();

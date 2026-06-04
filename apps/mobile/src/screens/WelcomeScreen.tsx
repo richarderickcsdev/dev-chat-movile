@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList,
   StyleSheet, Modal, Alert, ActivityIndicator, Keyboard,
 } from 'react-native';
+import { BASE_URL } from '../api/client';
 
 const COUNTRIES = [
   { code: '+1', flag: '🇺🇸', name: 'Estados Unidos' },
@@ -48,7 +49,7 @@ export default function WelcomeScreen({ navigation }: any) {
     }
     setLoading(true);
     try {
-      const res = await fetch('http://192.168.18.154:3001/auth/send-otp', {
+      const res = await fetch(`${BASE_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: fullPhone }),
