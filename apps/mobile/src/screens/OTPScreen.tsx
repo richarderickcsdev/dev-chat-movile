@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator,
+  StyleSheet, Alert, ActivityIndicator, Platform,
 } from 'react-native';
 import { BASE_URL } from '../api/client';
 
@@ -117,11 +117,19 @@ export default function OTPScreen({ route, navigation, onVerified }: any) {
             key={i}
             ref={(ref) => { inputRefs.current[i] = ref as TextInput; }}
             style={[styles.codeBox, digit ? styles.codeBoxFilled : null]}
-            keyboardType="number-pad"
+            keyboardType={Platform.OS === 'web' ? 'default' : 'number-pad'}
+            inputMode="numeric"
             maxLength={1}
             value={digit}
-            onChangeText={(t) => updateCode(t, i)}
-            onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+            onChangeText={(t) => {
+              if (t === '') {
+                if (i > 0 && !codesRef.current[i]) {
+                  inputRefs.current[i - 1]?.focus();
+                  return;
+                }
+              }
+              updateCode(t, i);
+            }}
             selectTextOnFocus
             editable={!loading}
           />
