@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
@@ -14,16 +14,21 @@ import ChatScreen from '../screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { isLoading, checkSession, setUser, isAuthenticated } = useAuth();
-  const [flow, setFlow] = useState<'loading' | 'auth' | 'profile' | 'app'>('loading');
+  const { isLoading, isAuthenticated, checkSession, setUser } = useAuth();
+  const [screen, setScreen] = useState<'loading' | 'auth' | 'profile' | 'app'>('loading');
+  const [pendingToken, setPendingToken] = useState('');
 
   useEffect(() => {
-    checkSession().then(setFlow);
+    checkSession().then(setScreen);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated && screen === 'app') {
+      checkSession().then(setScreen);
+    }
   }, [isAuthenticated]);
 
-  const [pendingTokens, setPendingTokens] = useState<{ access: string; refresh: string } | null>(null);
-
-  async function onVerified(phone: string, code: string) {
+  const onVerified = useCallback(async (phone: string, code: string) => {
     const res = await fetch(`${BASE_URL}/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,21 +47,21 @@ export default function AppNavigator() {
     }
     const me = await meRes.json();
     setUser(me);
-    connectSocket().catch((err) => console.warn('Socket connection failed:', err?.message));
+    connectSocket().catch(() => {});
 
     if (!me.name) {
-      setPendingTokens({ access: data.accessToken, refresh: data.refreshToken });
-      setFlow('profile');
+      setPendingToken(data.accessToken);
+      setScreen('profile');
     } else {
-      setFlow('app');
+      setScreen('app');
     }
-  }
+  }, [setUser]);
 
-  async function onProfileDone() {
-    setFlow('app');
-  }
+  const onProfileDone = useCallback(async () => {
+    setScreen('app');
+  }, []);
 
-  if (isLoading || flow === 'loading') {
+  if (isLoading && screen === 'loading') {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#075E54' }}>
         <ActivityIndicator size="large" color="#fff" />
@@ -65,24 +70,22 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer key={flow}>
+    <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {flow === 'auth' && (
+        {screen === 'auth' && (
           <>
-            <Stack.Screen name="Welcome">
-              {(props) => <WelcomeScreen {...props} />}
-            </Stack.Screen>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="OTP">
               {(props) => <OTPScreen {...props} onVerified={onVerified} />}
             </Stack.Screen>
           </>
         )}
-        {flow === 'profile' && (
+        {screen === 'profile' && (
           <Stack.Screen name="ProfileSetup">
-            {(props) => <ProfileSetupScreen {...props} token={pendingTokens?.access || ''} onDone={onProfileDone} />}
+            {(props) => <ProfileSetupScreen {...props} token={pendingToken} onDone={onProfileDone} />}
           </Stack.Screen>
         )}
-        {flow === 'app' && (
+        {screen === 'app' && (
           <>
             <Stack.Screen name="Chats" component={ChatsScreen} options={{ headerShown: true, title: 'dev-chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: 'Chat', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />

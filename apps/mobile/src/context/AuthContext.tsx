@@ -40,11 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await res.json();
       setUser(userData);
       connectSocket().catch((err) => console.warn('Socket connection failed:', err?.message));
+      setIsAuthenticated(true);
       if (!userData.name) {
-        setIsAuthenticated(false);
         return 'profile';
       }
-      setIsAuthenticated(true);
       return 'app';
     } catch {
       await clearTokens();
