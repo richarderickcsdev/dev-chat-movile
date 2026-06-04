@@ -28,8 +28,6 @@ export default function ChatScreen({ route, navigation }: any) {
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
 
   useEffect(() => {
-
-  useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (fullscreenUri) {
         setFullscreenUri(null);
