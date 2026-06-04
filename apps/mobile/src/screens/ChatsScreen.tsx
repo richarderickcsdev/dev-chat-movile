@@ -47,7 +47,7 @@ export default function ChatsScreen({ navigation, onLogout }: any) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: 'Chats',
+      headerTitle: 'Xhats',
       headerTitleAlign: 'center',
       headerTitleStyle: { fontSize: 18, fontWeight: '600' },
       headerLeft: () => (
