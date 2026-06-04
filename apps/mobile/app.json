@@ -18,7 +18,17 @@
       "adaptiveIcon": {
         "backgroundColor": "#075E54"
       },
-      "package": "com.devchat.app"
-    }
+      "package": "com.devchat.app",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "La app necesita acceder a tus fotos para tu avatar de perfil",
+          "cameraPermission": "La app necesita acceder a la cámara para tu avatar"
+        }
+      ]
+    ]
   }
 }
