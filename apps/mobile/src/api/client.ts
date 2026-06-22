@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = 'http://192.168.18.154:3001';
+export const BASE_URL = 'https://mas-rehabilitation-assign-regards.trycloudflare.com';
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
