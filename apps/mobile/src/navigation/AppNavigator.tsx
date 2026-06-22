@@ -12,6 +12,10 @@ import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import ChatsScreen from '../screens/ChatsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import ContactsScreen from '../screens/ContactsScreen';
+import GroupListScreen from '../screens/GroupListScreen';
+import CreateGroupScreen from '../screens/CreateGroupScreen';
+import GroupDetailScreen from '../screens/GroupDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -103,6 +107,10 @@ export default function AppNavigator() {
             </Stack.Screen>
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff', headerTitle: '' }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar perfil', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: 'Contactos', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="GroupList" component={GroupListScreen} options={{ title: 'Grupos', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: 'Crear grupo', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
+            <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Detalle del grupo', headerStyle: { backgroundColor: '#075E54' }, headerTintColor: '#fff' }} />
           </>
         )}
       </Stack.Navigator>

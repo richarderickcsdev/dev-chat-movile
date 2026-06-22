@@ -12,6 +12,14 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Demasiadas solicitudes, espera 15 minutos' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * @openapi
  * /auth/send-otp:
@@ -82,6 +90,6 @@ router.post('/verify-otp', otpLimiter, authController.verifyOtp);
  *       200:
  *         description: Token renovado
  */
-router.post('/refresh', authController.refreshToken);
+router.post('/refresh', refreshLimiter, authController.refreshToken);
 
 export default router;

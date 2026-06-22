@@ -60,4 +60,26 @@ router.get('/', authenticate, contactController.list);
  */
 router.delete('/:id', authenticate, contactController.remove);
 
+/**
+ * @openapi
+ * /contacts/{id}:
+ *   patch:
+ *     tags: [Contacts]
+ *     summary: Actualizar nombre de un contacto
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string, example: "Nuevo nombre" }
+ *     responses:
+ *       200:
+ *         description: Nombre actualizado
+ */
+router.patch('/:id', authenticate, contactController.updateName);
+
 export default router;

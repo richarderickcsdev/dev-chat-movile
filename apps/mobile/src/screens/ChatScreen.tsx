@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal, BackHandler } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, Modal, BackHandler, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { api, BASE_URL, getAccessToken } from '../api/client';
@@ -18,6 +18,39 @@ function statusIcon(status: string): string {
   }
 }
 
+function statusColor(status: string): string {
+  switch (status) {
+    case 'read': return '#53bdeb';
+    case 'delivered': return '#8696a0';
+    case 'sent': return '#8696a0';
+    case 'sending': return '#8696a0';
+    default: return '#8696a0';
+  }
+}
+
+function formatMsgTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateSeparator(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const days = Math.floor(diff / 86400000);
+
+  if (days === 0) return 'Hoy';
+  if (days === 1) return 'Ayer';
+  if (days < 7) return d.toLocaleDateString('es', { weekday: 'long' });
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function isNewDay(prevIso: string, currIso: string): boolean {
+  const a = new Date(prevIso);
+  const b = new Date(currIso);
+  return a.getDate() !== b.getDate() || a.getMonth() !== b.getMonth() || a.getFullYear() !== b.getFullYear();
+}
+
 export default function ChatScreen({ route, navigation }: any) {
   const { conversationId } = route.params;
   const { user } = useAuth();
@@ -26,6 +59,7 @@ export default function ChatScreen({ route, navigation }: any) {
   const [editMode, setEditMode] = useState<{ id: string; content: string } | null>(null);
   const [typingUser, setTypingUser] = useState('');
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -37,47 +71,41 @@ export default function ChatScreen({ route, navigation }: any) {
     });
     return () => backHandler.remove();
   }, [fullscreenUri]);
+
   const flatRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tempIdMap = useRef<Map<string, any>>(new Map());
 
   const userId = user?.id || '';
 
   useLayoutEffect(() => {
     const { partnerName, partnerAvatar } = route.params;
     navigation.setOptions({
-      title: partnerName || 'Chat',
+      headerTitle: '',
       headerLeft: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -8 }}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
-            <Text style={{ color: '#fff', fontSize: 18 }}>←</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -4 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 2 }}>
+            <Text style={{ color: '#fff', fontSize: 22, fontWeight: '600' }}>‹</Text>
           </TouchableOpacity>
           {partnerAvatar ? (
-            <Image source={{ uri: partnerAvatar.startsWith('http') ? partnerAvatar : `${BASE_URL}${partnerAvatar}` }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }} />
+            <Image source={{ uri: partnerAvatar.startsWith('http') ? partnerAvatar : `${BASE_URL}${partnerAvatar}` }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
           ) : (
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>{(partnerName || '?')[0].toUpperCase()}</Text>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>{(partnerName || '?')[0].toUpperCase()}</Text>
             </View>
           )}
           <View>
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{partnerName || 'Chat'}</Text>
-            {typingUser ? <Text style={{ color: '#a5d6a7', fontSize: 12 }}>escribiendo...</Text> : null}
+            <Text style={{ color: '#fff', fontSize: 17, fontWeight: '600' }}>{partnerName || 'Chat'}</Text>
+            {typingUser ? <Text style={{ color: '#a5d6a7', fontSize: 12, marginTop: 1 }}>escribiendo...</Text> : null}
           </View>
         </View>
       ),
-      headerTitle: '',
     });
   }, [navigation, route.params, typingUser]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: typingUser ? 'escribiendo...' : 'Chat',
-    });
-  }, [navigation, typingUser]);
-
   useEffect(() => {
     const socket = getSocket();
+    if (!socket) return;
     socket.emit('join_room', conversationId);
 
     loadMessages().then((loaded) => {
@@ -124,11 +152,23 @@ export default function ChatScreen({ route, navigation }: any) {
       if (data.userId !== userId) setTypingUser('');
     };
 
+    const onEdited = (data: { messageId: string; content: string }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === data.messageId ? { ...m, content: data.content } : m)),
+      );
+    };
+
+    const onDeleted = (data: { messageId: string }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
+    };
+
     socket.on('message:new', onNewMsg);
     socket.on('message:ack', onAck);
     socket.on('messages:status', onStatus);
     socket.on('typing:start', onTypingStart);
     socket.on('typing:stop', onTypingStop);
+    socket.on('message:edited', onEdited);
+    socket.on('message:deleted', onDeleted);
 
     return () => {
       socket.emit('leave_room', conversationId);
@@ -137,14 +177,17 @@ export default function ChatScreen({ route, navigation }: any) {
       socket.off('messages:status', onStatus);
       socket.off('typing:start', onTypingStart);
       socket.off('typing:stop', onTypingStop);
+      socket.off('message:edited', onEdited);
+      socket.off('message:deleted', onDeleted);
     };
   }, [conversationId, userId]);
 
   async function loadMessages(): Promise<Message[]> {
     try {
       const data = await api.get<{ messages: Message[] }>(`/conversations/${conversationId}/messages`);
-      setMessages(data.messages);
-      return data.messages;
+      const sorted = (data.messages || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setMessages(sorted);
+      return sorted;
     } catch (err) {
       console.error(err);
       return [];
@@ -174,13 +217,16 @@ export default function ChatScreen({ route, navigation }: any) {
     setText('');
 
     const socket = getSocket();
-    socket.emit('message:send', { tempId, conversationId, content });
-    socket.emit('typing:stop', conversationId);
+    if (socket) {
+      socket.emit('message:send', { tempId, conversationId, content });
+      socket.emit('typing:stop', conversationId);
+    }
   }
 
   function handleTextChange(t: string) {
     setText(t);
     const socket = getSocket();
+    if (!socket) return;
     socket.emit('typing:start', conversationId);
     if (typingTimer.current) clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
@@ -201,20 +247,23 @@ export default function ChatScreen({ route, navigation }: any) {
   }
 
   function handleLongPress(msg: Message) {
-    if (msg.senderId !== userId) return;
-    Alert.alert('Mensaje', '¿Qué quieres hacer?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
+    const opts: { text: string; style?: any; onPress: () => void }[] = [
+      { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+    ];
+    if (msg.senderId === userId) {
+      opts.push({
         text: 'Editar',
         onPress: () => {
           setEditMode({ id: msg._id, content: msg.content });
           setText(msg.content);
         },
-      },
-      {
+      });
+    }
+    if (msg.senderId === userId) {
+      opts.push({
         text: 'Eliminar', style: 'destructive',
         onPress: () => {
-          Alert.alert('Eliminar', '¿Seguro?', [
+          Alert.alert('Eliminar', '¿Eliminar este mensaje?', [
             { text: 'No', style: 'cancel' },
             {
               text: 'Sí', style: 'destructive',
@@ -227,8 +276,9 @@ export default function ChatScreen({ route, navigation }: any) {
             },
           ]);
         },
-      },
-    ]);
+      });
+    }
+    Alert.alert('Mensaje', undefined, opts);
   }
 
   async function handlePickImage() {
@@ -270,81 +320,136 @@ export default function ChatScreen({ route, navigation }: any) {
     setText('');
   }
 
+  function handleScroll(evt: any) {
+    const offset = evt.nativeEvent.contentOffset.y;
+    setShowScrollDown(offset > 200);
+  }
+
+  function scrollToBottom() {
+    flatRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }
+
   return (
     <View style={styles.wrapper}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
           ref={flatRef}
           data={messages}
           keyExtractor={(m) => m._id}
           inverted
-          contentContainerStyle={{ paddingBottom: 8 }}
-          renderItem={({ item }) => {
+          onScroll={handleScroll}
+          scrollEventThrottle={100}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item, index }) => {
             const isMine = item.senderId === userId;
             const isImage = item.type === 'image' && item.imageUrl;
             const imgSrc = isImage ? (item.imageUrl!.startsWith('http') ? item.imageUrl : `${BASE_URL}${item.imageUrl}`) : '';
+            const prevItem = index < messages.length - 1 ? messages[index + 1] : null;
+            const showDate = !prevItem || isNewDay(prevItem.createdAt, item.createdAt);
+
             return (
-              <TouchableOpacity activeOpacity={0.8} onLongPress={() => handleLongPress(item)} onPress={isImage ? () => setFullscreenUri(imgSrc) : undefined}>
-                <View style={[styles.bubble, isImage && styles.bubbleImage, isMine ? styles.mine : styles.other]}>
-                  {isImage ? (
-                    <View>
-                      <Image source={{ uri: imgSrc }} style={styles.imageMsg} resizeMode="cover" />
-                      {isMine && (
-                        <View style={styles.imageStatusRow}>
-                          <Text style={[styles.statusIcon, item.status === 'read' && styles.statusRead]}>
-                            {statusIcon(item.status)}
-                          </Text>
+              <View>
+                {showDate && (
+                  <View style={styles.dateSep}>
+                    <Text style={styles.dateSepText}>{formatDateSeparator(item.createdAt)}</Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onLongPress={() => handleLongPress(item)}
+                  onPress={isImage ? () => setFullscreenUri(imgSrc) : undefined}
+                  style={[styles.bubbleWrap, isMine ? styles.bubbleWrapMine : styles.bubbleWrapOther]}
+                >
+                  <View style={[styles.bubble, isImage && styles.bubbleImage, isMine ? styles.mine : styles.other]}>
+                    {isImage ? (
+                      <View>
+                        <Image source={{ uri: imgSrc }} style={styles.imageMsg} resizeMode="cover" />
+                        <View style={styles.imageMeta}>
+                          <Text style={styles.msgTime}>{formatMsgTime(item.createdAt)}</Text>
+                          {isMine && (
+                            <Text style={[styles.statusDot, { color: statusColor(item.status || 'sent') }]}>
+                              {' '}{statusIcon(item.status || 'sent')}
+                            </Text>
+                          )}
                         </View>
-                      )}
-                    </View>
-                  ) : (
-                    <View style={styles.msgRow}>
-                      <Text style={styles.msgText}>{item.content}</Text>
-                      {isMine && (
-                        <Text style={[styles.statusIcon, item.status === 'read' && styles.statusRead]}>
-                          {' '}{statusIcon(item.status)}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.msgRow}>
+                        <Text style={styles.msgText}>{item.content}</Text>
+                        <View style={styles.msgMeta}>
+                          <Text style={styles.msgTime}>{formatMsgTime(item.createdAt)}</Text>
+                          {isMine && (
+                            <Text style={[styles.statusDot, { color: statusColor(item.status || 'sent') }]}>
+                              {' '}{statusIcon(item.status || 'sent')}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
             );
           }}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
-              <Text style={styles.emptyText}>Sin mensajes aún</Text>
+              <View style={styles.emptyIconWrap}>
+                <Text style={styles.emptyIcon}>💬</Text>
+              </View>
+              <Text style={styles.emptyTitle}>Sin mensajes aún</Text>
+              <Text style={styles.emptySubtext}>Envía un mensaje para iniciar la conversación</Text>
             </View>
           }
         />
-        {typingUser ? (
-          <Text style={styles.typingText}>escribiendo...</Text>
-        ) : null}
-        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+
+        {typingUser && (
+          <View style={styles.typingRow}>
+            <Text style={styles.typingDot}>●</Text>
+            <Text style={styles.typingDot}>●</Text>
+            <Text style={styles.typingDot}>●</Text>
+            <Text style={styles.typingText}>escribiendo...</Text>
+          </View>
+        )}
+
+        {showScrollDown && (
+          <TouchableOpacity style={styles.scrollDownBtn} onPress={scrollToBottom} activeOpacity={0.7}>
+            <Text style={styles.scrollDownIcon}>⌄</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 6) }]}>
           {editMode && (
-            <TouchableOpacity onPress={cancelEdit} style={{ marginRight: 8 }}>
-              <Text style={{ color: '#c62828', fontWeight: '600', fontSize: 18 }}>✕</Text>
-            </TouchableOpacity>
+            <View style={styles.editBadge}>
+              <Text style={styles.editBadgeText}>Editando</Text>
+              <TouchableOpacity onPress={cancelEdit}>
+                <Text style={styles.editCancel}>✕</Text>
+              </TouchableOpacity>
+            </View>
           )}
           {!editMode && (
-            <TouchableOpacity onPress={handlePickImage} style={{ marginRight: 6 }}>
-              <Text style={{ fontSize: 22 }}>📎</Text>
+            <TouchableOpacity onPress={handlePickImage} style={styles.attachBtn}>
+              <Text style={styles.attachIcon}>📎</Text>
             </TouchableOpacity>
           )}
           <TextInput
             style={styles.input}
             value={text}
             onChangeText={handleTextChange}
-            placeholder={editMode ? 'Editando...' : 'Mensaje...'}
-            placeholderTextColor="#999"
+            placeholder={editMode ? 'Editando...' : 'Mensaje'}
+            placeholderTextColor="#8696a0"
             onSubmitEditing={sendMessage}
             returnKeyType="send"
           />
-          <TouchableOpacity style={[styles.sendBtn, !text.trim() && !editMode ? styles.sendBtnDisabled : null]} onPress={sendMessage} disabled={!text.trim() && !editMode}>
-            <Text style={styles.sendText}>{editMode ? 'Editar' : 'Enviar'}</Text>
+          <TouchableOpacity
+            style={[styles.sendBtn, (!text.trim() && !editMode) && styles.sendBtnDisabled]}
+            onPress={sendMessage}
+            disabled={!text.trim() && !editMode}
+          >
+            <Text style={styles.sendIcon}>{editMode ? '✎' : '⌵'}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -362,28 +467,174 @@ export default function ChatScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1 },
-  container: { flex: 1, backgroundColor: '#e5ddd5' },
-  bubble: { maxWidth: '78%', padding: 8, paddingHorizontal: 10, borderRadius: 8, marginVertical: 2, marginHorizontal: 10 },
-  mine: { backgroundColor: '#dcf8c6', alignSelf: 'flex-end', borderTopRightRadius: 2 },
-  other: { backgroundColor: '#fff', alignSelf: 'flex-start', borderTopLeftRadius: 2 },
-  msgText: { fontSize: 16, color: '#1a1a1a', flexShrink: 1 },
-  msgRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  statusIcon: { fontSize: 12, color: '#8696a0', marginLeft: 4 },
-  statusRead: { color: '#53bdeb' },
-  typingText: { fontSize: 13, color: '#075E54', fontStyle: 'italic', paddingHorizontal: 16, paddingVertical: 4 },
-  emptyChat: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyText: { fontSize: 16, color: '#999' },
-  inputRow: { flexDirection: 'row', padding: 8, backgroundColor: '#f0f0f0', alignItems: 'center', borderTopWidth: 0.5, borderTopColor: '#ddd' },
-  input: { flex: 1, backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 16, height: 40, fontSize: 16 },
-  sendBtn: { marginLeft: 8, backgroundColor: '#075E54', borderRadius: 20, paddingHorizontal: 16, height: 40, justifyContent: 'center' },
-  sendBtnDisabled: { opacity: 0.5 },
-  sendText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  bubbleImage: { padding: 3, maxWidth: '70%' },
+  wrapper: { flex: 1, backgroundColor: '#efeae2' },
+  container: { flex: 1 },
+  listContent: { paddingVertical: 6 },
+
+  dateSep: { alignItems: 'center', marginVertical: 8 },
+  dateSepText: {
+    fontSize: 12,
+    color: '#54656f',
+    backgroundColor: '#e6e1d8',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+
+  bubbleWrap: { marginHorizontal: 12, marginVertical: 2 },
+  bubbleWrapMine: { alignItems: 'flex-end' },
+  bubbleWrapOther: { alignItems: 'flex-start' },
+  bubble: {
+    maxWidth: '78%',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    elevation: 1,
+  },
+  mine: {
+    backgroundColor: '#d9fdd3',
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  other: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 2,
+    borderBottomLeftRadius: 2,
+  },
+
+  msgRow: {
+    flexDirection: 'column',
+  },
+  msgText: { fontSize: 15, color: '#111b21', lineHeight: 20 },
+  msgMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 2,
+  },
+  msgTime: { fontSize: 11, color: '#667781' },
+  statusDot: { fontSize: 11 },
+
+  bubbleImage: { padding: 3, maxWidth: '72%' },
   imageMsg: { width: 200, height: 200, borderRadius: 6 },
-  imageStatusRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 3, paddingRight: 2 },
-  fullscreenBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
-  fullscreenClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  imageMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 3,
+    paddingRight: 2,
+  },
+
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    backgroundColor: '#efeae2',
+  },
+  typingDot: { fontSize: 8, color: '#075E54', marginRight: 2, opacity: 0.7 },
+  typingText: { fontSize: 12, color: '#667781', marginLeft: 4, fontStyle: 'italic' },
+
+  scrollDownBtn: {
+    position: 'absolute',
+    bottom: 64,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  scrollDownIcon: { fontSize: 22, color: '#54656f', fontWeight: '700' },
+
+  emptyChat: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 120,
+    paddingHorizontal: 40,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#e7f0ea',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyIcon: { fontSize: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '500', color: '#3b4a54', marginBottom: 6 },
+  emptySubtext: { fontSize: 14, color: '#8696a0', textAlign: 'center' },
+
+  inputRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    backgroundColor: '#f0f2f5',
+    alignItems: 'center',
+    borderTopWidth: 0.5,
+    borderTopColor: '#e0ddd7',
+  },
+  editBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#d9fdd3',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    height: 34,
+    marginRight: 6,
+  },
+  editBadgeText: { fontSize: 13, color: '#075E54', fontWeight: '500', marginRight: 8 },
+  editCancel: { fontSize: 16, color: '#c62828', fontWeight: '600' },
+  attachBtn: { marginRight: 6, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  attachIcon: { fontSize: 20 },
+  input: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    height: 40,
+    fontSize: 16,
+    color: '#111b21',
+  },
+  sendBtn: {
+    marginLeft: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#075E54',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendBtnDisabled: { opacity: 0.4 },
+  sendIcon: { color: '#fff', fontSize: 22, fontWeight: '600' },
+
+  fullscreenBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   fullscreenCloseText: { color: '#fff', fontSize: 20, fontWeight: '600' },
   fullscreenImage: { width: '100%', height: '80%' },
 });

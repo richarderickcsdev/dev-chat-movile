@@ -91,6 +91,19 @@ export async function deleteMessage(req: Request, res: Response, next: NextFunct
       }
     }
 
+    const io = getIO();
+    conversationService.getConversationById(req.params.conversationId).then((conv) => {
+      if (conv) {
+        const deletedEvent = { messageId: req.params.messageId, conversationId: req.params.conversationId };
+        io.to(req.params.conversationId).emit('message:deleted', deletedEvent);
+        conv.participants.forEach((pid) => {
+          if (pid !== req.user!.userId) {
+            io.to(pid).emit('message:deleted', deletedEvent);
+          }
+        });
+      }
+    }).catch(() => {});
+
     res.json({ message: 'Mensaje eliminado', _id: req.params.messageId });
   } catch (err) {
     next(err as Error);
@@ -114,6 +127,22 @@ export async function editMessage(req: Request, res: Response, next: NextFunctio
         content: content.slice(0, 200),
         senderId: req.user!.userId,
         createdAt: msg.createdAt,
+      });
+    }
+
+    const io = getIO();
+    if (conversation) {
+      const editedEvent = {
+        messageId: req.params.messageId,
+        conversationId: req.params.conversationId,
+        content,
+        edited: true,
+      };
+      io.to(req.params.conversationId).emit('message:edited', editedEvent);
+      conversation.participants.forEach((pid) => {
+        if (pid !== req.user!.userId) {
+          io.to(pid).emit('message:edited', editedEvent);
+        }
       });
     }
 
@@ -165,7 +194,7 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
     });
 
     const io = getIO();
-    io.to(req.params.id).emit('message:new', {
+    const msgEvent = {
       _id: message._id.toString(),
       conversationId: req.params.id,
       senderId: req.user!.userId,
@@ -176,7 +205,19 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
       imageHeight: metadata.height || 0,
       status: 'sent',
       createdAt: message.createdAt.toISOString(),
-    });
+    };
+
+    io.to(req.params.id).emit('message:new', msgEvent);
+
+    conversationService.getConversationById(req.params.id).then((conv) => {
+      if (conv) {
+        conv.participants.forEach((pid) => {
+          if (pid !== req.user!.userId) {
+            io.to(pid).emit('message:new', msgEvent);
+          }
+        });
+      }
+    }).catch(() => {});
 
     res.status(201).json({ _id: message._id.toString(), imageUrl });
   } catch (err) {

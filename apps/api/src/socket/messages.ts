@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io';
 import { z } from 'zod';
 import { createMessage, getMessages, markAsDelivered, markAsRead } from '../services/message.service';
-import { updateLastMessage } from '../services/conversation.service';
+import { updateLastMessage, getConversationById } from '../services/conversation.service';
 import { getIO } from './index';
 import { logger } from '../lib/logger';
 import { SocketAuth } from './auth';
@@ -43,14 +43,26 @@ export function registerMessageHandlers(socket: Socket): void {
         status: 'sent',
       });
 
-      io.to(input.conversationId).emit('message:new', {
+      const msgEvent = {
         _id: message._id.toString(),
         conversationId: input.conversationId,
         senderId: auth.userId,
         content: input.content,
         status: 'sent',
         createdAt: message.createdAt.toISOString(),
-      });
+      };
+
+      io.to(input.conversationId).emit('message:new', msgEvent);
+
+      getConversationById(input.conversationId).then((conv) => {
+        if (conv) {
+          conv.participants.forEach((pid) => {
+            if (pid !== auth.userId) {
+              io.to(pid).emit('message:new', msgEvent);
+            }
+          });
+        }
+      }).catch(() => {});
     } catch (err) {
       if (err instanceof z.ZodError) {
         socket.emit('message:error', {

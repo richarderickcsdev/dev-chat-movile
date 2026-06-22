@@ -106,3 +106,17 @@ export async function removeContact(contactId: string, phone: string): Promise<v
 
   logger.info({ contactId, userId }, 'Contacto eliminado');
 }
+
+export async function updateContactName(contactId: string, phone: string, newName: string): Promise<void> {
+  const userId = await resolveUserId(phone);
+  const result = await pgPool.query(
+    'UPDATE contacts SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id',
+    [newName, contactId, userId],
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError(404, 'Contacto no encontrado');
+  }
+
+  logger.info({ contactId, userId, newName }, 'Nombre de contacto actualizado');
+}

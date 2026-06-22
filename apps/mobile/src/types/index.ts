@@ -46,6 +46,7 @@ export interface Conversation {
     status?: string;
     type?: string;
   };
+  unreadCount?: number;
   online: boolean;
   createdAt: string;
   updatedAt: string;

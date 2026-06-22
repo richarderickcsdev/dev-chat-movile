@@ -63,6 +63,24 @@ router.post('/me/avatar', authenticate, upload.single('avatar'), userController.
 
 /**
  * @openapi
+ * /users/search:
+ *   get:
+ *     tags: [Users]
+ *     summary: Buscar usuarios por telefono
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: phone
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios encontrados
+ */
+router.get('/search', authenticate, userController.searchUsers);
+
+/**
+ * @openapi
  * /users/{id}:
  *   get:
  *     tags: [Users]

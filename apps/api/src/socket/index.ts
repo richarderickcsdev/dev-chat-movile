@@ -59,6 +59,8 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     await redis.sadd(redisKey('user', userId), socket.id);
     await redis.setex(redisKey('online', userId), ONLINE_TTL, '1');
 
+    socket.join(userId);
+
     registerMessageHandlers(socket);
 
     socket.on('typing:start', async (conversationId: string) => {

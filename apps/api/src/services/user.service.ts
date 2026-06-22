@@ -63,6 +63,14 @@ export async function findById(id: string): Promise<User> {
   return result.rows[0];
 }
 
+export async function searchByPhone(phone: string): Promise<any[]> {
+  const result = await pgPool.query(
+    'SELECT id, phone, name, bio, avatar_url FROM users WHERE phone LIKE $1 LIMIT 20',
+    [`%${phone}%`],
+  );
+  return result.rows;
+}
+
 export async function findByIdPublic(id: string): Promise<PublicProfile> {
   const user = await findById(id);
   return toPublic(user);

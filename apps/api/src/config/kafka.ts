@@ -26,3 +26,29 @@ export async function createConsumer(groupId: string): Promise<Consumer> {
   await consumer.connect();
   return consumer;
 }
+
+export async function startMessageConsumer(): Promise<void> {
+  try {
+    const consumer = kafka.consumer({ groupId: 'dev-chat-message-consumer' });
+    await consumer.connect();
+    await consumer.subscribe({ topic: 'message.events', fromBeginning: false });
+
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        const value = message.value?.toString();
+        if (value) {
+          try {
+            const event = JSON.parse(value);
+            logger.info({ event, topic, partition }, 'Evento Kafka recibido');
+          } catch {
+            logger.info({ raw: value }, 'Mensaje Kafka raw');
+          }
+        }
+      },
+    });
+
+    logger.info('Kafka consumer de mensajes iniciado');
+  } catch (err) {
+    logger.warn({ err }, 'Kafka consumer no disponible (opcional en dev)');
+  }
+}

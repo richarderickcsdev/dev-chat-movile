@@ -25,6 +25,14 @@ export async function listConversations(userId: string) {
     .sort({ updatedAt: -1 })
     .lean();
 
+  const convIds = conversations.map((c: any) => c._id.toString());
+
+  const unreadAgg = await Message.aggregate([
+    { $match: { conversationId: { $in: convIds }, senderId: { $ne: userId }, status: { $ne: 'read' } } },
+    { $group: { _id: '$conversationId', count: { $sum: 1 } } },
+  ]);
+  const unreadMap = new Map(unreadAgg.map((u: any) => [u._id, u.count]));
+
   const enriched = await Promise.all(
     conversations.map(async (conv: any) => {
       const partnerId = conv.participants.find((p: string) => p !== userId);
@@ -66,6 +74,7 @@ export async function listConversations(userId: string) {
           avatar_url: partner.avatar_url,
         } : null,
         lastMessage: lastMsg,
+        unreadCount: unreadMap.get(conv._id.toString()) || 0,
         online,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,

@@ -38,3 +38,21 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
     next(err as Error);
   }
 }
+
+const updateNameSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+export async function updateName(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { name } = updateNameSchema.parse(req.body);
+    await contactService.updateContactName(req.params.id, req.user!.phone, name);
+    res.json({ message: 'Nombre actualizado' });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      next(new AppError(400, 'Datos invalidos: ' + err.issues.map(e => e.message).join(', ')));
+    } else {
+      next(err as Error);
+    }
+  }
+}

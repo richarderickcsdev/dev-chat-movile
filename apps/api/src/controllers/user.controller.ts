@@ -80,6 +80,19 @@ export async function uploadAvatar(req: Request, res: Response, next: NextFuncti
   }
 }
 
+export async function searchUsers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const phone = req.query.phone as string;
+    if (!phone || phone.length < 3) {
+      return next(new AppError(400, 'Ingresa al menos 3 caracteres'));
+    }
+    const users = await userService.searchByPhone(phone);
+    res.json({ users });
+  } catch (err) {
+    next(err as Error);
+  }
+}
+
 export async function getUserById(req: Request, res: Response, next: NextFunction) {
   try {
     const profile = await userService.findByIdPublic(req.params.id);
