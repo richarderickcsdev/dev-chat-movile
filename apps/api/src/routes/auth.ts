@@ -1,24 +1,8 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
-import { rateLimit } from 'express-rate-limit';
+import { authLimiter, refreshLimiter } from '../middlewares/security';
 
 const router = Router();
-
-const otpLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  message: { error: 'Demasiados intentos, espera 1 hora' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const refreshLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Demasiadas solicitudes, espera 15 minutos' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * @openapi
@@ -39,7 +23,7 @@ const refreshLimiter = rateLimit({
  *       200:
  *         description: Codigo enviado (revisar logs en dev)
  */
-router.post('/send-otp', otpLimiter, authController.sendOtp);
+router.post('/send-otp', authLimiter, authController.sendOtp);
 
 /**
  * @openapi
@@ -69,7 +53,7 @@ router.post('/send-otp', otpLimiter, authController.sendOtp);
  *                 accessToken: { type: string }
  *                 refreshToken: { type: string }
  */
-router.post('/verify-otp', otpLimiter, authController.verifyOtp);
+router.post('/verify-otp', authLimiter, authController.verifyOtp);
 
 /**
  * @openapi

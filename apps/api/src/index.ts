@@ -1,6 +1,5 @@
 import express from 'express';
 import http from 'http';
-import cors from 'cors';
 import path from 'path';
 
 import { env } from './config/env';
@@ -18,6 +17,11 @@ import conversationsRouter from './routes/conversations';
 import groupsRouter from './routes/groups';
 import { swaggerSpec, swaggerUi } from './config/swagger';
 import { errorHandler } from './middlewares/errorHandler';
+import {
+  helmetMiddleware,
+  corsMiddleware,
+  generalLimiter,
+} from './middlewares/security';
 import { logger } from './lib/logger';
 
 async function bootstrap() {
@@ -36,18 +40,22 @@ async function bootstrap() {
 
   const app = express();
 
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(helmetMiddleware);
+  app.use(corsMiddleware);
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   app.use('/health', healthRouter);
   app.use('/uploads', express.static(path.resolve(env.MEDIA_LOCAL_PATH)));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  app.use(generalLimiter);
+
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
   app.use('/contacts', contactsRouter);
   app.use('/conversations', conversationsRouter);
   app.use('/groups', groupsRouter);
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });

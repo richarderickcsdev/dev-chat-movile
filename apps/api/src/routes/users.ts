@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as userController from '../controllers/user.controller';
 import { authenticate } from '../middlewares/auth';
 import { upload } from '../config/uploads';
+import { uploadLimiter } from '../middlewares/security';
 
 const router = Router();
 
@@ -59,7 +60,7 @@ router.patch('/me', authenticate, userController.updateMe);
  *       200:
  *         description: Avatar actualizado
  */
-router.post('/me/avatar', authenticate, upload.single('avatar'), userController.uploadAvatar);
+router.post('/me/avatar', authenticate, uploadLimiter, upload.single('avatar'), userController.uploadAvatar);
 
 /**
  * @openapi

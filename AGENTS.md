@@ -95,7 +95,7 @@ dev-chat-movile/
 |---|---|
 | RIC-34 Tests del backend (Jest + Supertest) | ✅ Done |
 | RIC-35 Testing en 2 celulares físicos | ✅ Done |
-| RIC-36 Seguridad básica | 📋 |
+| RIC-36 Seguridad básica | ✅ Done |
 | RIC-37 Performance básica | 📋 |
 
 ### Fase 6 (Backlog)
@@ -114,7 +114,57 @@ dev-chat-movile/
 - `cd apps/mobile && npx expo start` — escanear QR con Expo Go
 - `BASE_URL` configurado en `src/api/client.ts` (IP local del PC o URL de Cloudflare Tunnel)
 
-## RIC-35 — Testing en 2 celulares físicos ✅
+## RIC-36 — Seguridad básica ✅
+
+### Paquetes instalados
+- **helmet** — Headers HTTP de seguridad (CSP, X-Frame-Options, HSTS, X-Content-Type-Options:nosniff, etc.)
+- **cors** — Política de CORS configurable (ya existía, ahora configurado)
+- **express-rate-limit** — Rate limiting para auth y uploads (ya existía, ahora centralizado y ajustado)
+- **zod** — Validación de schemas en todos los endpoints (ya existía en controllers)
+
+### Medidas implementadas
+
+#### 1. Helmet.js
+Configuración en `apps/api/src/middlewares/security.ts`:
+- `crossOriginEmbedderPolicy: false` (para compatibilidad con Expo)
+- `crossOriginResourcePolicy: cross-origin`
+- `contentSecurityPolicy` configurada para permitir imágenes de cualquier origen HTTPS
+- HSTS, X-DNS-Prefetch-Control, X-Download-Options, etc. activados por defecto
+
+#### 2. CORS
+- Desarrollo: permite cualquier origen (`*`)
+- Producción: usa `CORS_ORIGIN` del .env (orígenes separados por coma)
+- Métodos: GET, POST, PATCH, DELETE
+- Headers: Content-Type, Authorization
+- Expone headers de rate limiting: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+
+#### 3. Rate Limiting
+| Limiter | Ventana | Max | Aplica a |
+|---|---|---|---|
+| `authLimiter` | 1 hora | **3** | POST /auth/send-otp, POST /auth/verify-otp |
+| `refreshLimiter` | 15 min | 20 | POST /auth/refresh |
+| `uploadLimiter` | 15 min | 30 | POST /users/me/avatar, POST /conversations/:id/images |
+| `generalLimiter` | 15 min | 500 (prod) / 10000 (dev) | Todas las rutas excepto /health y /api-docs |
+
+#### 4. JWT
+- Access token: **15 minutos** (`JWT_EXPIRES_IN=15m` en `.env.local`)
+- Refresh token: **30 días** + rotation (se elimina el anterior al renovar)
+- Implementado en `apps/api/src/middlewares/auth.ts:19-25` y `apps/api/src/services/auth.service.ts:38-51`
+
+#### 5. Zod Validation
+Todos los endpoints con body tienen validación Zod:
+- `auth.controller.ts`: sendOtp (phone regex), verifyOtp (phone + code 6 dígitos), refreshToken (token no vacío)
+- `user.controller.ts`: updateProfile (name 1-100 chars, bio max 160 chars)
+- `contact.controller.ts`: sync (array 1-5000 phones), updateName (name 1-100 chars)
+- `conversation.controller.ts`: create (participantId), editMessage (content 1-5000 chars)
+- `group.controller.ts`: create (name 1-100 + memberIds 1-500), addMembers (memberIds 1-500)
+
+#### 6. Uploads protegidos
+- **Filtro MIME + extensión**: Solo jpeg, png, webp, gif (doble verificación)
+- **Sanitización de nombres**: Elimina `..`, `/`, `\`, caracteres no alfanuméricos
+- **Límite de tamaño**: 5 MB por archivo
+- **Rate limit de subidas**: 30 subidas por 15 minutos
+- **Body JSON limitado**: 1 MB máximo (`express.json({ limit: '1mb' })`)
 
 ### Objetivo
 Validar la comunicación en tiempo real entre 2 dispositivos físicos usando la app React Native (Expo) contra el backend local expuesto a internet mediante Cloudflare Tunnel.

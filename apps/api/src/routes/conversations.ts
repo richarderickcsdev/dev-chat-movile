@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as conversationController from '../controllers/conversation.controller';
 import { authenticate } from '../middlewares/auth';
 import { upload } from '../config/uploads';
+import { uploadLimiter } from '../middlewares/security';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.delete('/:conversationId/messages/:messageId', authenticate, conversation
 
 router.patch('/:conversationId/messages/:messageId', authenticate, conversationController.editMessage);
 
-router.post('/:id/images', authenticate, upload.single('image'), conversationController.uploadImage);
+router.post('/:id/images', authenticate, uploadLimiter, upload.single('image'), conversationController.uploadImage);
 
 router.delete('/:id', authenticate, conversationController.remove);
 
