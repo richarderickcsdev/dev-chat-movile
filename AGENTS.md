@@ -49,7 +49,9 @@ dev-chat-movile/
 - Fase 2 ✅ — Backend Auth & Usuarios (Express, DBs, Auth OTP, Perfiles, Contactos)
 - Fase 3 ✅ — Mensajería Real-time (Socket.io, Mensajes, Estados, Conversaciones, Grupos, Typing)
 - Fase 4 ✅ — App React Native (Expo, Login, Chats, ChatScreen, Socket client, API client)
-- Fase 5 — QA & Seguridad (SIGUIENTE)
+- Fase 5 ✅ — QA & Seguridad (Tests, Testing fisico, Seguridad, Performance)
+
+### Fase 6 (Backlog)
 
 ## Issues en Linear
 
@@ -98,10 +100,10 @@ dev-chat-movile/
 | RIC-36 Seguridad básica | ✅ Done |
 | RIC-37 Performance básica | ✅ Done |
 
-### Fase 6 (Backlog)
+### Fase 6 (En progreso)
 | Issue | |
 |---|---|
-| RIC-38 Beta con Expo Go (testers) | 📋 |
+| RIC-38 Beta con Expo Go (testers) | ✅ Done |
 | RIC-39 Build APK Android + Play Store | 📋 |
 | RIC-40 Ruta de escalado gradual | 📋 |
 
@@ -227,6 +229,47 @@ export const BASE_URL = 'https://mas-rehabilitation-assign-regards.trycloudflare
 4. 2 celulares con Expo Go instalado
 5. `cd apps/mobile && npx expo start --tunnel`
 6. Ambos celulares escanean el QR o ingresan la URL de Expo
+
+## RIC-38 — Beta con Expo Go (testers) ✅
+
+### Objetivo
+Exponer la app a internet mediante Cloudflare Tunnel para que testers externos puedan probarla con solo tener Expo Go instalado, sin necesidad de estar en la misma red WiFi.
+
+### Arquitectura
+```
+Testers (celular)  →  internet  →  *.trycloudflare.com  →  cloudflared (túnel)  →  localhost:3001
+```
+
+### Setup (3 terminales)
+
+| Terminal | Comando | Directorio |
+|---|---|---|
+| 1 | `npm run dev` | `apps/api` |
+| 2 | `cloudflared tunnel --url http://localhost:3001` | cualquiera |
+| 3 | `npx expo start --tunnel` | `apps/mobile` |
+
+### Setup para testers
+1. Instalar **Expo Go** (Play Store / App Store)
+2. Escanear QR de `npx expo start --tunnel`
+3. App carga automáticamente (sin build ni instalación)
+
+### URLs históricas
+| Prueba | URL |
+|---|---|
+| RIC-35 (21 Junio) | `mas-rehabilitation-assign-regards.trycloudflare.com` |
+| 22 Junio | `figures-dealer-biblical-ellen.trycloudflare.com` |
+| Actual (22 Junio) | `wrote-gonna-hugo-searches.trycloudflare.com` |
+
+### Limitaciones
+- URL cambia al reiniciar cloudflared (actualizar `client.ts`)
+- Túnel sin cuenta Cloudflare = sin uptime garantizado
+- PC del dev debe estar encendida y conectada
+- ~10 testers simultáneos máximo (PC local)
+
+### Próximo paso
+**RIC-39** — Build APK Android + Play Store: `eas build` para eliminar dependencia de Expo Go.
+
+---
 
 ## Conexiones Externas (MCP)
 - **Notion:** Documentación del proyecto en Notion (página "Proyecto Chat Movile")
