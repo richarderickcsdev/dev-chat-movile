@@ -84,7 +84,7 @@ dev-chat-movile/
 | Issue | Estado |
 |---|---|
 | RIC-28 Setup proyecto Expo + Navegación | ✅ Done |
-| RIC-29 Flujo de autenticación en mobile | 🟡 In Progress |
+| RIC-29 Flujo de autenticación en mobile | ✅ Done |
 | RIC-30 Lista de conversaciones | ✅ Done |
 | RIC-31 ChatScreen | ✅ Done |
 | RIC-32 Envío de imágenes | ✅ Done |
@@ -93,7 +93,7 @@ dev-chat-movile/
 ### Fase 5 (Backlog)
 | Issue | |
 |---|---|
-| RIC-34 Tests del backend (Jest + Supertest) | 📋 |
+| RIC-34 Tests del backend (Jest + Supertest) | ✅ Done |
 | RIC-35 Testing en 2 celulares físicos | 📋 |
 | RIC-36 Seguridad básica | 📋 |
 | RIC-37 Performance básica | 📋 |
