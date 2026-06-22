@@ -32,6 +32,14 @@ export async function initSchema(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
     `);
 
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_contacts_contact_id ON contacts(contact_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_phone_like ON users(phone varchar_pattern_ops);
+    `);
+
     logger.info('Esquema de base de datos inicializado');
   } finally {
     client.release();

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { pgPool } from '../config/postgres';
+import { redis } from '../config/redis';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 
@@ -20,6 +21,8 @@ export interface PublicProfile {
   avatar_url: string;
 }
 
+const USER_CACHE_TTL = 3600;
+
 function toPublic(user: User): PublicProfile {
   return {
     id: user.id,
@@ -27,6 +30,14 @@ function toPublic(user: User): PublicProfile {
     bio: user.bio,
     avatar_url: user.avatar_url,
   };
+}
+
+async function cacheUser(user: User): Promise<void> {
+  await redis.setex(`user:${user.id}`, USER_CACHE_TTL, JSON.stringify(user));
+}
+
+async function invalidateUserCache(id: string): Promise<void> {
+  await redis.del(`user:${id}`);
 }
 
 export async function findOrCreateByPhone(phone: string): Promise<User> {
@@ -51,6 +62,11 @@ export async function findOrCreateByPhone(phone: string): Promise<User> {
 }
 
 export async function findById(id: string): Promise<User> {
+  const cached = await redis.get(`user:${id}`);
+  if (cached) {
+    return JSON.parse(cached) as User;
+  }
+
   const result = await pgPool.query<User>(
     'SELECT * FROM users WHERE id = $1',
     [id],
@@ -60,6 +76,7 @@ export async function findById(id: string): Promise<User> {
     throw new AppError(404, 'Usuario no encontrado');
   }
 
+  await cacheUser(result.rows[0]);
   return result.rows[0];
 }
 
@@ -113,6 +130,9 @@ export async function updateProfile(
   if (result.rows.length === 0) {
     throw new AppError(404, 'Usuario no encontrado');
   }
+
+  await invalidateUserCache(id);
+  await cacheUser(result.rows[0]);
 
   logger.info({ userId: id, updates: Object.keys(data) }, 'Perfil actualizado');
   return result.rows[0];

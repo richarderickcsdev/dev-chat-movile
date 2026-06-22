@@ -96,7 +96,7 @@ dev-chat-movile/
 | RIC-34 Tests del backend (Jest + Supertest) | ✅ Done |
 | RIC-35 Testing en 2 celulares físicos | ✅ Done |
 | RIC-36 Seguridad básica | ✅ Done |
-| RIC-37 Performance básica | 📋 |
+| RIC-37 Performance básica | ✅ Done |
 
 ### Fase 6 (Backlog)
 | Issue | |
